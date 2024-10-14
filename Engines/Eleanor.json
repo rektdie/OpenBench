@@ -1,0 +1,41 @@
+{
+    "private"  : false,
+    "nps"      : 600000,
+    "base"     : "legalMovegen",
+    "source"   : "https://github.com/rektdie/Eleanor",
+
+    "bounds"   : "[0.00, 3.00]",
+    "book"     : "None",
+    "win_adj"  : "None",
+    "draw_adj" : "None",
+
+    "build" : {
+        "path"      : "",
+        "compilers" : ["g++"],
+        "cpuflags"  : ["POPCNT"],
+        "systems"   : ["Linux", "Windows"]
+    },
+
+    "tunemodes" : {
+
+        "STC" : {
+            "options"       : "Threads=1 Hash=16 Minimal=true",
+            "timecontrol"   : "10.0+0.10"
+        },
+
+        "MTC" : {
+            "options"       : "Threads=1 Hash=32 Minimal=true",
+            "timecontrol"   : "30.0+0.30"
+        },
+
+        "LTC" : {
+            "options"       : "Threads=1 Hash=64 Minimal=true",
+            "timecontrol"   : "60.0+0.60"
+        },
+
+        "VLTC" : {
+            "options"       : "Threads=1 Hash=128 Minimal=true",
+            "timecontrol"   : "180.0+1.80"
+        }
+    }
+}
