@@ -19,30 +19,16 @@
         "Pohl.pgn",
         "UHO_4060_v2.epd",
         "UHO_4060_vB.epd",
-        "UHO_4060_vT.epd"
+        "UHO_4060_vT.epd",
+        "UHO_Lichess_4852_v1.epd"
     ],
 
     "engines" : [
-        "4ku",
-        "Berserk",
-        "Bit-Genie",
-        "BlackMarlin",
-        "Demolito",
-        "Drofa",
-        "Equisetum",
-        "Ethereal",
-        "FabChess",
-        "Halogen",
-        "Igel",
-        "Koivisto",
-        "Laser",
-        "RubiChess",
-        "Seer",
+        "Eleanor",
+        "Potential",
+        "NoobyBot",
         "Stash",
-        "Stockfish",
-        "Weiss",
-        "Winter",
-        "Zahak",
-        "Eleanor"
+        "Prelude",
+        "Simpler"
     ]
 }

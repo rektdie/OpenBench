@@ -1,35 +1,35 @@
 {
     "private"  : false,
-    "nps"      : 600000,
+    "nps"      : 800000,
     "source"   : "https://github.com/rektdie/Eleanor",
 
     "build" : {
         "path"      : "",
-        "compilers" : ["g++"],
-        "cpuflags"  : ["POPCNT"],
-        "systems"   : ["Linux", "Windows"]
+        "compilers" : ["clang++"],
+        "cpuflags"  : [],
+        "systems"   : ["Linux", "Windows", "Darwin"]
     },
 
     "test_presets" : {
 
         "default" : {
-            "base_branch"     : "legalMovegen",
-            "book_name"       : "None",
-            "test_bounds"     : "[0.00, 3.00]",
+            "base_branch"     : "main",
+            "book_name"       : "UHO_Lichess_4852_v1.epd",
+            "test_bounds"     : "[0.00, 5.00]",
             "test_confidence" : "[0.05, 0.05]",
-            "win_adj"         : "None",
-            "draw_adj"        : "None"
+            "win_adj"         : "movecount=3 score=400",
+            "draw_adj"        : "movenumber=40 movecount=8 score=10"
         },
 
         "STC" : {
             "both_options"      : "Threads=1 Hash=8",
-            "both_time_control" : "10.0+0.1",
+            "both_time_control" : "8.0+0.08",
             "workload_size"     : 32
         },
 
         "LTC" : {
             "both_options"      : "Threads=1 Hash=64",
-            "both_time_control" : "60.0+0.6",
+            "both_time_control" : "40.0+0.4",
             "workload_size"     : 8
         },
 
@@ -55,8 +55,8 @@
         },
 
         "STC" : {
-            "dev_options"      : "Threads=1 Hash=8",
-            "dev_time_control" : "10.0+0.10"
+            "dev_options"      : "Threads=1 Hash=64",
+            "dev_time_control" : "8.0+0.08"
         },
 
         "MTC" : {
@@ -65,12 +65,12 @@
         },
 
         "LTC" : {
-            "dev_options"      : "Threads=1 Hash=64",
+            "dev_options"      : "Threads=1 Hash=256",
             "dev_time_control" : "60.0+0.60"
         },
 
         "VLTC" : {
-            "dev_options"      : "Threads=1 Hash=128",
+            "dev_options"      : "Threads=1 Hash=512",
             "dev_time_control" : "180.0+1.80"
         }
     },

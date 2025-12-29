@@ -121,6 +121,13 @@
             </div>
         {% endif %}
 
+        <!-- Copy Button (DC): Copy the current results statblock -->
+        {% if type == "TEST" or type == "DATAGEN" %}
+            <div class="anchor-container">
+                <a class="mt-1 anchorbutton btn-blue" onclick="copy_text('long-statblock', true, true)">Copy Stat Block (DC Block)</a>
+            </div>
+        {% endif %}
+
         <!-- PGN Download Button -->
         {% if workload.upload_pgns != "FALSE" %}
             <div class="anchor-container">
