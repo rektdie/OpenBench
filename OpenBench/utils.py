@@ -133,6 +133,22 @@ def read_git_credentials(engine):
 def path_join(*args):
     return "/".join([f.lstrip("/").rstrip("/") for f in args]).rstrip('/')
 
+def llr_history_path(test_id):
+    return os.path.join(MEDIA_ROOT, 'llr_history', '%d.json' % (test_id))
+
+def get_llr_history(test):
+
+    path = llr_history_path(test.id)
+    if not os.path.exists(path):
+        return [[0, 0.0]] if test.test_mode == 'SPRT' else []
+
+    try:
+        with open(path) as fin:
+            history = json.load(fin)
+        return history if history else [[0, 0.0]]
+    except Exception:
+        return [[0, 0.0]]
+
 def extract_option(options, option):
 
     match = re.search(r'(?<={0}=")[^"]*'.format(option), options)
@@ -419,6 +435,7 @@ def update_test(request, machine):
     with transaction.atomic():
 
         test = Test.objects.select_for_update().get(id=test_id)
+        should_record_llr = False
 
         if test.finished or test.deleted:
             return { 'stop' : True }
@@ -452,6 +469,7 @@ def update_test(request, machine):
             test.passed   = test.currentllr > test.upperllr
             test.failed   = test.currentllr < test.lowerllr
             test.finished = test.passed or test.failed
+            should_record_llr = True
 
         elif test.test_mode == 'GAMES':
 
@@ -475,6 +493,9 @@ def update_test(request, machine):
             test.passed = test.finished = test.games >= test.max_games
 
         test.save()
+
+        if should_record_llr:
+            record_llr_history(test)
 
     # Update Result object; No risk from concurrent access
     Result.objects.filter(id=result_id).update(
@@ -504,3 +525,29 @@ def update_test(request, machine):
     )
 
     return [{}, { 'stop' : True }][test.finished]
+
+def record_llr_history(test, max_points=120):
+
+    history = get_llr_history(test)
+    point = [test.games, round(test.currentllr, 4)]
+
+    if history and history[-1][0] == point[0]:
+        history[-1] = point
+    else:
+        history.append(point)
+
+    if not history or history[0][0] != 0:
+        history.insert(0, [0, 0.0])
+
+    if len(history) > max_points:
+        keep = [history[0]]
+        interior = history[1:-1:2]
+        history = keep + interior + [history[-1]]
+
+        while len(history) > max_points:
+            history = [history[0]] + history[1:-1:2] + [history[-1]]
+
+    path = llr_history_path(test.id)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w') as fout:
+        json.dump(history, fout)

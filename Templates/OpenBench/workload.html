@@ -5,6 +5,83 @@
 
 {% block scripts %}
     <script src="{% static 'copy_text.js' %}?{{ static_version }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.llr-history-widget').forEach(function(widget) {
+                var history = JSON.parse(widget.dataset.history || '[]');
+                if (!history.length) return;
+
+                var svg = widget.querySelector('.llr-history-graph');
+                var plot = widget.querySelector('.llr-history-plot');
+                var hoverLine = widget.querySelector('.llr-hover-line');
+                var hoverPoint = widget.querySelector('.llr-hover-point');
+                var tooltip = widget.querySelector('.llr-history-tooltip');
+                var viewBox = svg.viewBox.baseVal;
+
+                function clamp(value, min, max) {
+                    return Math.max(min, Math.min(max, value));
+                }
+
+                function setActivePoint(point) {
+                    hoverLine.setAttribute('x1', point.x);
+                    hoverLine.setAttribute('x2', point.x);
+                    hoverPoint.setAttribute('cx', point.x);
+                    hoverPoint.setAttribute('cy', point.y);
+                    hoverPoint.classList.toggle('llr-hover-point-positive', point.llr >= 0);
+                    hoverPoint.classList.toggle('llr-hover-point-negative', point.llr < 0);
+
+                    tooltip.textContent = point.games + ' games | LLR ' + point.llr.toFixed(2);
+                    tooltip.classList.add('active');
+
+                    var left = clamp((point.x / viewBox.width) * plot.clientWidth + 8, 8, plot.clientWidth - tooltip.offsetWidth - 8);
+                    var top = clamp((point.y / viewBox.height) * svg.clientHeight - tooltip.offsetHeight - 8, 2, svg.clientHeight - tooltip.offsetHeight - 2);
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = top + 'px';
+                }
+
+                function clearActivePoint() {
+                    tooltip.classList.remove('active');
+                    hoverLine.classList.remove('active');
+                    hoverPoint.classList.remove('active', 'llr-hover-point-positive', 'llr-hover-point-negative');
+                }
+
+                function nearestPoint(clientX) {
+                    var rect = svg.getBoundingClientRect();
+                    var localX = ((clientX - rect.left) / rect.width) * viewBox.width;
+                    var best = history[0];
+                    var bestDistance = Math.abs(best.x - localX);
+
+                    for (var i = 1; i < history.length; i++) {
+                        var distance = Math.abs(history[i].x - localX);
+                        if (distance < bestDistance) {
+                            best = history[i];
+                            bestDistance = distance;
+                        }
+                    }
+
+                    return best;
+                }
+
+                svg.addEventListener('mousemove', function(event) {
+                    setActivePoint(nearestPoint(event.clientX));
+                    hoverLine.classList.add('active');
+                    hoverPoint.classList.add('active');
+                });
+
+                svg.addEventListener('mouseleave', function() {
+                    clearActivePoint();
+                });
+
+                svg.addEventListener('mouseenter', function(event) {
+                    setActivePoint(nearestPoint(event.clientX));
+                    hoverLine.classList.add('active');
+                    hoverPoint.classList.add('active');
+                });
+
+                clearActivePoint();
+            });
+        });
+    </script>
 {% endblock %}
 
 {% block content %}
@@ -192,6 +269,13 @@
                 </div>
             </div>
         </form>
+
+        {% if workload.test_mode == "SPRT" %}
+            <div class="llr-history-panel" title="LLR history over the lifetime of the test">
+                <div class="llr-history-label">LLR History</div>
+                {{workload|llr_history_graph}}
+            </div>
+        {% endif %}
     </div>
 
     <!-- SPSA Paramater Summary, for Tunes -->

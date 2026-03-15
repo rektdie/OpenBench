@@ -18,8 +18,12 @@
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+import html
+import json
 import re, django
 import OpenBench.config, OpenBench.utils, OpenBench.stats, OpenBench.models
+
+from django.utils.safestring import mark_safe
 
 def oneDigitPrecision(value):
     try:
@@ -200,6 +204,207 @@ def machine_name(machine_id):
         return machine.info['machine_name']
     except: return 'None'
 
+def llr_history_graph(test, width=320, height=112):
+
+    if test.test_mode != 'SPRT':
+        return ''
+
+    history = list(OpenBench.utils.get_llr_history(test))
+    if not history:
+        history = [[0, 0.0], [max(test.games, 1), test.currentllr]]
+    elif history[-1][0] != test.games or history[-1][1] != test.currentllr:
+        history.append([test.games, test.currentllr])
+
+    x_max = max(max(point[0] for point in history), 1)
+    observed = [point[1] for point in history] + [0.0]
+    observed_min = min(observed)
+    observed_max = max(observed)
+    observed_span = observed_max - observed_min
+
+    if observed_span < 0.75:
+        center = (observed_min + observed_max) / 2.0
+        y_min = center - 0.375
+        y_max = center + 0.375
+    else:
+        padding = max(observed_span * 0.15, 0.15)
+        y_min = observed_min - padding
+        y_max = observed_max + padding
+
+    left_pad = 8
+    right_pad = 8
+    top_pad = 8
+    bottom_pad = 8
+    inner_width = max(width - left_pad - right_pad, 1)
+    inner_height = max(height - top_pad - bottom_pad, 1)
+
+    def scale_x(value):
+        return left_pad + inner_width * (value / x_max)
+
+    def scale_y(value):
+        return top_pad + inner_height * (1.0 - ((value - y_min) / (y_max - y_min)))
+
+    plotted_points = [
+        {
+            'games': x,
+            'llr': round(y, 4),
+            'x': round(scale_x(x), 2),
+            'y': round(scale_y(y), 2),
+        }
+        for x, y in history
+    ]
+    y_mid = (y_min + y_max) / 2.0
+    x_mid = x_max / 2.0
+    x_quarter = x_max / 4.0
+    x_three_quarter = 3.0 * x_max / 4.0
+
+    grid_lines = []
+    for value in [y_max, y_mid, y_min]:
+        y_pos = scale_y(value)
+        grid_lines.append(
+            '<line class="llr-grid-line" x1="%d" y1="%.2f" x2="%d" y2="%.2f"></line>'
+            % (left_pad, y_pos, width - right_pad, y_pos)
+        )
+
+    for value in [x_quarter, x_mid, x_three_quarter]:
+        x_pos = scale_x(value)
+        grid_lines.append(
+            '<line class="llr-grid-line" x1="%.2f" y1="%d" x2="%.2f" y2="%d"></line>'
+            % (x_pos, top_pad, x_pos, height - bottom_pad)
+        )
+
+    def interpolate_zero_crossing(a, b):
+        if a['llr'] == b['llr']:
+            return None
+
+        ratio = (0.0 - a['llr']) / (b['llr'] - a['llr'])
+        if ratio < 0.0 or ratio > 1.0:
+            return None
+
+        x_pos = a['x'] + ratio * (b['x'] - a['x'])
+        return {
+            'games': a['games'] + ratio * (b['games'] - a['games']),
+            'llr': 0.0,
+            'x': round(x_pos, 2),
+            'y': round(scale_y(0.0), 2),
+        }
+
+    positive_segments = []
+    negative_segments = []
+    current_segment = [plotted_points[0]]
+    current_positive = plotted_points[0]['llr'] >= 0.0
+
+    for index in range(1, len(plotted_points)):
+        prev_point = plotted_points[index - 1]
+        point = plotted_points[index]
+        point_positive = point['llr'] >= 0.0
+
+        if point_positive == current_positive:
+            current_segment.append(point)
+            continue
+
+        crossing = interpolate_zero_crossing(prev_point, point)
+        if crossing:
+            current_segment.append(crossing)
+
+        if len(current_segment) >= 2:
+            if current_positive:
+                positive_segments.append(current_segment)
+            else:
+                negative_segments.append(current_segment)
+
+        current_segment = [crossing, point] if crossing else [point]
+        current_positive = point_positive
+
+    if len(current_segment) >= 2:
+        if current_positive:
+            positive_segments.append(current_segment)
+        else:
+            negative_segments.append(current_segment)
+
+    positive_paths = ''.join(
+        '<polyline class="llr-path-positive" points="%s"></polyline>' % (
+            ' '.join('%.2f,%.2f' % (point['x'], point['y']) for point in segment)
+        )
+        for segment in positive_segments
+    )
+    negative_paths = ''.join(
+        '<polyline class="llr-path-negative" points="%s"></polyline>' % (
+            ' '.join('%.2f,%.2f' % (point['x'], point['y']) for point in segment)
+        )
+        for segment in negative_segments
+    )
+
+    guides = []
+    for value, css_class in [
+        (test.lowerllr, 'llr-boundary'),
+        (0.0, 'llr-zero'),
+        (test.upperllr, 'llr-boundary'),
+    ]:
+        if y_min <= value <= y_max:
+            y_pos = scale_y(value)
+            guides.append(
+                '<line class="%s" x1="%d" y1="%.2f" x2="%d" y2="%.2f"></line>'
+                % (css_class, left_pad, y_pos, width - right_pad, y_pos)
+            )
+
+    latest_x = plotted_points[-1]['x']
+    latest_y = plotted_points[-1]['y']
+    title = 'LLR history: current %.2f after %d games' % (test.currentllr, test.games)
+    history_json = html.escape(json.dumps(plotted_points, separators=(',', ':')))
+
+    svg = '''
+        <div class="llr-history-widget" data-history="{history_json}">
+            <div class="llr-history-chart">
+                <div class="llr-history-yaxis">
+                    <div>{y_max_label}</div>
+                    <div>{y_mid_label}</div>
+                    <div>{y_min_label}</div>
+                </div>
+                <div class="llr-history-main">
+                    <div class="llr-history-plot">
+                        <svg class="llr-history-graph" viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="{title}">
+                            <title>{title}</title>
+                            <rect class="llr-bg" x="0" y="0" width="{width}" height="{height}" rx="6"></rect>
+                            {grid_lines}
+                            {guides}
+                            {positive_paths}
+                            {negative_paths}
+                            <line class="llr-hover-line" x1="{latest_x:.2f}" y1="{top_pad:.2f}" x2="{latest_x:.2f}" y2="{hover_bottom:.2f}"></line>
+                            <circle class="llr-hover-point" cx="{latest_x:.2f}" cy="{latest_y:.2f}" r="3"></circle>
+                            <rect class="llr-hitbox" x="0" y="0" width="{width}" height="{height}" rx="6"></rect>
+                        </svg>
+                        <div class="llr-history-tooltip"></div>
+                    </div>
+                    <div class="llr-history-xaxis">
+                        <div>0</div>
+                        <div>{x_mid_label}</div>
+                        <div>{x_max_label}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    '''.format(
+        width=width,
+        height=height,
+        title=html.escape(title),
+        history_json=history_json,
+        grid_lines=''.join(grid_lines),
+        guides=''.join(guides),
+        positive_paths=positive_paths,
+        negative_paths=negative_paths,
+        latest_x=latest_x,
+        latest_y=latest_y,
+        top_pad=top_pad,
+        hover_bottom=height - bottom_pad,
+        y_max_label=html.escape('%.2f' % (y_max)),
+        y_mid_label=html.escape('%.2f' % (y_mid)),
+        y_min_label=html.escape('%.2f' % (y_min)),
+        x_mid_label=html.escape('%d' % (round(x_mid))),
+        x_max_label=html.escape('%d g' % (x_max)),
+    )
+
+    return mark_safe(svg)
+
 
 register = django.template.Library()
 register.filter('oneDigitPrecision', oneDigitPrecision)
@@ -218,6 +423,7 @@ register.filter('cpuflagsBlock', cpuflagsBlock)
 register.filter('compilerBlock', compilerBlock)
 register.filter('removePrefix', removePrefix)
 register.filter('machine_name', machine_name)
+register.filter('llr_history_graph', llr_history_graph)
 
 ####
 

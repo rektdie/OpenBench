@@ -309,6 +309,159 @@ body, html, main{
     padding: 0.50rem 0.75rem;
 }
 
+#content .llr-history-panel {
+    margin: 0.5rem 0 0.75rem;
+}
+
+#content .llr-history-widget {
+    position: relative;
+    width: 372px;
+}
+
+#content .llr-history-chart {
+    display: flex;
+    align-items: stretch;
+    gap: 0.55rem;
+}
+
+#content .llr-history-yaxis {
+    width: 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #A7B1C2;
+    font-size: 10px;
+    text-align: right;
+    padding: 0.35rem 0 1.6rem;
+}
+
+#content .llr-history-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
+}
+
+#content .llr-history-plot {
+    position: relative;
+}
+
+#content .llr-history-label {
+    color: var(--color-font3);
+    font-size: 0.85rem;
+    margin-bottom: 0.2rem;
+}
+
+#content .llr-history-graph {
+    display: block;
+    width: 320px;
+    height: 112px;
+}
+
+#content .llr-history-graph .llr-bg {
+    fill: #242933;
+    stroke: #4C566A;
+    stroke-width: 1;
+}
+
+#content .llr-history-graph .llr-grid-line {
+    stroke: rgba(236, 239, 244, 0.14);
+    stroke-width: 1;
+}
+
+#content .llr-history-graph .llr-boundary {
+    stroke: #BF616A;
+    stroke-width: 1;
+    stroke-dasharray: 4 3;
+    opacity: 0.85;
+}
+
+#content .llr-history-graph .llr-zero {
+    stroke: #81A1C1;
+    stroke-width: 1;
+    opacity: 0.7;
+}
+
+#content .llr-history-graph .llr-path-positive,
+#content .llr-history-graph .llr-path-negative {
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+#content .llr-history-graph .llr-path-positive {
+    stroke: #7BCB8B;
+}
+
+#content .llr-history-graph .llr-path-negative {
+    stroke: #E07A7A;
+}
+
+#content .llr-history-xaxis {
+    display: flex;
+    justify-content: space-between;
+    color: #A7B1C2;
+    font-size: 10px;
+    padding: 0 0.2rem;
+}
+
+#content .llr-history-graph .llr-point {
+    fill: #ECEFF4;
+}
+
+#content .llr-history-graph .llr-hover-line {
+    stroke: #ECEFF4;
+    stroke-width: 1;
+    stroke-dasharray: 2 2;
+    opacity: 0;
+}
+
+#content .llr-history-graph .llr-hover-point {
+    fill: #ECEFF4;
+    stroke-width: 1.5;
+    opacity: 0;
+}
+
+#content .llr-history-graph .llr-hover-line.active,
+#content .llr-history-graph .llr-hover-point.active {
+    opacity: 0.85;
+}
+
+#content .llr-history-graph .llr-hover-point-positive {
+    stroke: #7BCB8B;
+}
+
+#content .llr-history-graph .llr-hover-point-negative {
+    stroke: #E07A7A;
+}
+
+#content .llr-history-graph .llr-hitbox {
+    fill: transparent;
+    cursor: crosshair;
+}
+
+#content .llr-history-tooltip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 0.18rem 0.4rem 0.12rem;
+    border-radius: 4px;
+    background-color: rgba(36, 41, 51, 0.96);
+    border: 1px solid #4C566A;
+    color: var(--color-font1);
+    font-size: 0.72rem;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    white-space: nowrap;
+}
+
+#content .llr-history-tooltip.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 /* Test Views */
 
 #content #config {
