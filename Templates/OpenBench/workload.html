@@ -10,6 +10,20 @@
             document.querySelectorAll('.llr-history-widget').forEach(function(widget) {
                 var history = JSON.parse(widget.dataset.history || '[]');
                 if (!history.length) return;
+                var realPoints = history.filter(function(point) { return !point.estimated; });
+                var peakGames = {};
+
+                for (var r = 1; r < realPoints.length - 1; r++) {
+                    var prev = realPoints[r - 1];
+                    var curr = realPoints[r];
+                    var next = realPoints[r + 1];
+                    var isPeak = curr.llr > prev.llr && curr.llr > next.llr;
+                    var isValley = curr.llr < prev.llr && curr.llr < next.llr;
+
+                    if (isPeak || isValley) {
+                        peakGames[curr.games] = true;
+                    }
+                }
 
                 var svg = widget.querySelector('.llr-history-graph');
                 var plot = widget.querySelector('.llr-history-plot');
@@ -30,7 +44,7 @@
                     hoverPoint.classList.toggle('llr-hover-point-positive', point.llr >= 0);
                     hoverPoint.classList.toggle('llr-hover-point-negative', point.llr < 0);
 
-                    tooltip.textContent = point.games + ' games | LLR ' + point.llr.toFixed(2);
+                    tooltip.textContent = point.games + ' games | LLR ' + (point.estimated ? '≈' : '') + point.llr.toFixed(2);
                     tooltip.classList.add('active');
 
                     var left = clamp((point.x / viewBox.width) * plot.clientWidth + 8, 8, plot.clientWidth - tooltip.offsetWidth - 8);
@@ -50,13 +64,24 @@
                     var localX = ((clientX - rect.left) / rect.width) * viewBox.width;
                     var best = history[0];
                     var bestDistance = Math.abs(best.x - localX);
+                    var bestPeak = null;
+                    var bestPeakDistance = Infinity;
 
-                    for (var i = 1; i < history.length; i++) {
+                    for (var i = 0; i < history.length; i++) {
                         var distance = Math.abs(history[i].x - localX);
                         if (distance < bestDistance) {
                             best = history[i];
                             bestDistance = distance;
                         }
+
+                        if (!history[i].estimated && peakGames[history[i].games] && distance < bestPeakDistance) {
+                            bestPeak = history[i];
+                            bestPeakDistance = distance;
+                        }
+                    }
+
+                    if (bestPeak && bestPeakDistance <= 5) {
+                        return bestPeak;
                     }
 
                     return best;

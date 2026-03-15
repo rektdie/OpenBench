@@ -136,7 +136,7 @@ def path_join(*args):
 def llr_history_path(test_id):
     return os.path.join(MEDIA_ROOT, 'llr_history', '%d.json' % (test_id))
 
-def get_llr_history(test):
+def load_llr_history(test):
 
     path = llr_history_path(test.id)
     if not os.path.exists(path):
@@ -148,6 +148,63 @@ def get_llr_history(test):
         return history if history else [[0, 0.0]]
     except Exception:
         return [[0, 0.0]]
+
+def interpolate_llr_history(history, max_points=120):
+
+    if not history:
+        return []
+
+    normalized = []
+    for games, llr in sorted(history, key=lambda point: point[0]):
+        point = [int(games), float(llr), False]
+        if normalized and normalized[-1][0] == point[0]:
+            normalized[-1] = point
+        else:
+            normalized.append(point)
+
+    if not normalized or normalized[0][0] != 0:
+        normalized.insert(0, [0, 0.0, False])
+
+    if len(normalized) == 1:
+        return normalized
+
+    final_games = max(normalized[-1][0], 1)
+    desired_points = min(max_points, max(2, final_games + 1))
+    step = final_games / float(desired_points - 1)
+    source_index = 0
+    estimated = []
+
+    for index in range(desired_points):
+        target_games = final_games if index == desired_points - 1 else index * step
+
+        while source_index + 1 < len(normalized) and normalized[source_index + 1][0] < target_games:
+            source_index += 1
+
+        left = normalized[source_index]
+        if source_index + 1 >= len(normalized):
+            llr = left[1]
+        else:
+            right = normalized[source_index + 1]
+            game_span = right[0] - left[0]
+            if game_span <= 0:
+                llr = right[1]
+            else:
+                ratio = (target_games - left[0]) / float(game_span)
+                llr = left[1] + ratio * (right[1] - left[1])
+
+        display_games = int(round(target_games))
+        estimated.append([display_games, round(llr, 4), True])
+
+    merged = {}
+    for games, llr, is_estimated in estimated + normalized:
+        existing = merged.get(games)
+        if existing is None or (existing[2] and not is_estimated):
+            merged[games] = [games, llr, is_estimated]
+
+    return [merged[key] for key in sorted(merged.keys())]
+
+def get_llr_history(test, max_points=120):
+    return interpolate_llr_history(load_llr_history(test), max_points=max_points)
 
 def extract_option(options, option):
 
@@ -526,9 +583,9 @@ def update_test(request, machine):
 
     return [{}, { 'stop' : True }][test.finished]
 
-def record_llr_history(test, max_points=120):
+def record_llr_history(test):
 
-    history = get_llr_history(test)
+    history = load_llr_history(test)
     point = [test.games, round(test.currentllr, 4)]
 
     if history and history[-1][0] == point[0]:
@@ -538,14 +595,6 @@ def record_llr_history(test, max_points=120):
 
     if not history or history[0][0] != 0:
         history.insert(0, [0, 0.0])
-
-    if len(history) > max_points:
-        keep = [history[0]]
-        interior = history[1:-1:2]
-        history = keep + interior + [history[-1]]
-
-        while len(history) > max_points:
-            history = [history[0]] + history[1:-1:2] + [history[-1]]
 
     path = llr_history_path(test.id)
     os.makedirs(os.path.dirname(path), exist_ok=True)

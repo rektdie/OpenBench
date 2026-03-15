@@ -211,9 +211,9 @@ def llr_history_graph(test, width=320, height=112):
 
     history = list(OpenBench.utils.get_llr_history(test))
     if not history:
-        history = [[0, 0.0], [max(test.games, 1), test.currentllr]]
+        history = [[0, 0.0, False], [max(test.games, 1), test.currentllr, False]]
     elif history[-1][0] != test.games or history[-1][1] != test.currentllr:
-        history.append([test.games, test.currentllr])
+        history.append([test.games, test.currentllr, False])
 
     x_max = max(max(point[0] for point in history), 1)
     observed = [point[1] for point in history] + [0.0]
@@ -247,10 +247,11 @@ def llr_history_graph(test, width=320, height=112):
         {
             'games': x,
             'llr': round(y, 4),
+            'estimated': estimated,
             'x': round(scale_x(x), 2),
             'y': round(scale_y(y), 2),
         }
-        for x, y in history
+        for x, y, estimated in history
     ]
     y_mid = (y_min + y_max) / 2.0
     x_mid = x_max / 2.0
