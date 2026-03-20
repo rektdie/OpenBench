@@ -1,7 +1,5 @@
 {% extends "OpenBench/base.html" %}
 
-{% load mytags %}
-
 {% block content %}
 
     <table class="hoverable">
@@ -18,13 +16,13 @@
             <tr>
                 <td class="timestamp">{{event.created|date:'U'}}</td>
                 <td>{{event.author|capfirst}}</td>
-                <td><a href="/test/{{event.test_id}}">{{event.test_id|testIdToPrettyName}}</a></td>
-                <td>{{event.test_id|testIdToTimeControl}}</td>
+                <td><a href="/test/{{event.test_id}}">{{event.test_name}}</a></td>
+                <td>{{event.test_time_control}}</td>
                 <td>{{event.summary}}</td>
             </tr>
         {% endfor %}
 
-    <table>
+    </table>
 
     {% include "OpenBench/Blocks/pagebrowser.html" %}
 

@@ -93,6 +93,7 @@ urlpatterns = [
     django.urls.path(r'api/networks/<str:engine>/<str:identifier>/', OpenBench.views.api_network_download),
     django.urls.path(r'api/buildinfo/', OpenBench.views.api_build_info),
     django.urls.path(r'api/pgns/<int:pgn_id>/', OpenBench.views.api_pgns),
+    django.urls.path(r'api/test/<int:id>/llr-history/', OpenBench.views.test_llr_history),
 
     # Redirect anything else to the Index
     django.urls.path(r'', OpenBench.views.index),

@@ -23,9 +23,9 @@
                 <td>{{machine.info.machine_name}}</td>
                 <td>{{machine.info.os_name}}</td>
                 <td>
-                    {% if machine.workload %}
-                        <a href="{{machine.workload|workload_url}}">
-                            {{machine.workload|workload_pretty_name}}
+                    {% if machine.workload_url %}
+                        <a href="{{machine.workload_url}}">
+                            {{machine.workload_name}}
                         </a>
                     {% else %}
                         None

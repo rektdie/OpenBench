@@ -29,6 +29,8 @@
 import math
 import scipy
 
+NORMAL_95_PERCENT_Z = 1.959963984540054
+
 def TrinomialSPRT(results, elo0, elo1):
 
     # Needs at least 1 Loss, 1 Draw, and 1 Win
@@ -80,8 +82,9 @@ def Elo(results):
     mu  = sum((f / div) * results[f] for f in range(len(results))) / N
     var = sum(((f / div) - mu)**2 * results[f] for f in range(len(results))) / N
 
-    mu_min = mu + scipy.stats.norm.ppf(0.025) * math.sqrt(var) / math.sqrt(N)
-    mu_max = mu + scipy.stats.norm.ppf(0.975) * math.sqrt(var) / math.sqrt(N)
+    delta = NORMAL_95_PERCENT_Z * math.sqrt(var) / math.sqrt(N)
+    mu_min = mu - delta
+    mu_max = mu + delta
 
     return logistic_elo(mu_min), logistic_elo(mu), logistic_elo(mu_max)
 

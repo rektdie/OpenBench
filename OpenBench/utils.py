@@ -133,8 +133,20 @@ def read_git_credentials(engine):
 def path_join(*args):
     return "/".join([f.lstrip("/").rstrip("/") for f in args]).rstrip('/')
 
+LLR_HISTORY_SAMPLE_POINTS = 120
+
 def llr_history_path(test_id):
     return os.path.join(MEDIA_ROOT, 'llr_history', '%d.json' % (test_id))
+
+def llr_history_compact_path(test_id, max_points=LLR_HISTORY_SAMPLE_POINTS):
+    return os.path.join(MEDIA_ROOT, 'llr_history_compact', '%d-%d.json' % (test_id, max_points))
+
+def write_json_file(path, contents):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    temporary_path = '%s.tmp' % (path)
+    with open(temporary_path, 'w') as fout:
+        json.dump(contents, fout)
+    os.replace(temporary_path, path)
 
 def load_llr_history(test):
 
@@ -149,30 +161,80 @@ def load_llr_history(test):
     except Exception:
         return [[0, 0.0]]
 
-def interpolate_llr_history(history, max_points=120):
+def has_fresh_compact_llr_history(test, max_points=LLR_HISTORY_SAMPLE_POINTS):
 
-    if not history:
-        return []
+    compact_path = llr_history_compact_path(test.id, max_points=max_points)
+    full_path = llr_history_path(test.id)
+
+    if not os.path.exists(compact_path):
+        return False
+
+    try:
+        return not os.path.exists(full_path) or os.path.getmtime(compact_path) >= os.path.getmtime(full_path)
+    except Exception:
+        return False
+
+def load_compact_llr_history(test, max_points=LLR_HISTORY_SAMPLE_POINTS):
+
+    compact_path = llr_history_compact_path(test.id, max_points=max_points)
+    if not has_fresh_compact_llr_history(test, max_points=max_points):
+        return None
+
+    try:
+        with open(compact_path) as fin:
+            history = json.load(fin)
+        return history if history else [[0, 0.0, False]]
+    except Exception:
+        return None
+
+def normalize_llr_history(history):
+
+    def append_point(points, point):
+        if points and points[-1][0] == point[0]:
+            points[-1] = point
+        else:
+            points.append(point)
 
     normalized = []
-    for games, llr in sorted(history, key=lambda point: point[0]):
+    ordered = True
+    previous_games = None
+
+    for games, llr in history:
         point = [int(games), float(llr), False]
-        if normalized and normalized[-1][0] == point[0]:
-            normalized[-1] = point
-        else:
-            normalized.append(point)
+
+        if previous_games is not None and point[0] < previous_games:
+            ordered = False
+            break
+
+        append_point(normalized, point)
+        previous_games = point[0]
+
+    if not ordered:
+        normalized = []
+        for games, llr in sorted(history, key=lambda point: point[0]):
+            append_point(normalized, [int(games), float(llr), False])
 
     if not normalized or normalized[0][0] != 0:
         normalized.insert(0, [0, 0.0, False])
 
-    if len(normalized) == 1:
+    return normalized
+
+def interpolate_llr_history(history, max_points=LLR_HISTORY_SAMPLE_POINTS):
+
+    if not history:
+        return []
+
+    normalized = normalize_llr_history(history)
+
+    if len(normalized) <= max_points:
         return normalized
 
     final_games = max(normalized[-1][0], 1)
     desired_points = min(max_points, max(2, final_games + 1))
     step = final_games / float(desired_points - 1)
     source_index = 0
-    estimated = []
+    exact_points = { games : llr for games, llr, _ in normalized }
+    sampled = {}
 
     for index in range(desired_points):
         target_games = final_games if index == desired_points - 1 else index * step
@@ -193,18 +255,36 @@ def interpolate_llr_history(history, max_points=120):
                 llr = left[1] + ratio * (right[1] - left[1])
 
         display_games = int(round(target_games))
-        estimated.append([display_games, round(llr, 4), True])
+        exact_llr = exact_points.get(display_games)
+        sampled[display_games] = [
+            display_games,
+            round(exact_llr if exact_llr is not None else llr, 4),
+            exact_llr is None,
+        ]
 
-    merged = {}
-    for games, llr, is_estimated in estimated + normalized:
-        existing = merged.get(games)
-        if existing is None or (existing[2] and not is_estimated):
-            merged[games] = [games, llr, is_estimated]
+    sampled[normalized[0][0]] = normalized[0]
+    sampled[normalized[-1][0]] = normalized[-1]
 
-    return [merged[key] for key in sorted(merged.keys())]
+    return [sampled[key] for key in sorted(sampled.keys())]
 
-def get_llr_history(test, max_points=120):
-    return interpolate_llr_history(load_llr_history(test), max_points=max_points)
+def write_compact_llr_history(test, history, max_points=LLR_HISTORY_SAMPLE_POINTS):
+    compact_history = interpolate_llr_history(history, max_points=max_points)
+    write_json_file(llr_history_compact_path(test.id, max_points=max_points), compact_history)
+    return compact_history
+
+def get_llr_history(test, max_points=LLR_HISTORY_SAMPLE_POINTS):
+    cached_history = load_compact_llr_history(test, max_points=max_points)
+    if cached_history is not None:
+        return cached_history
+
+    compact_history = interpolate_llr_history(load_llr_history(test), max_points=max_points)
+
+    try:
+        write_json_file(llr_history_compact_path(test.id, max_points=max_points), compact_history)
+    except Exception:
+        pass
+
+    return compact_history
 
 def extract_option(options, option):
 
@@ -221,25 +301,25 @@ def extract_option(options, option):
 
 
 def get_pending_tests():
-    t = Test.objects.filter(approved=False)
+    t = Test.objects.select_related('dev', 'base').filter(approved=False)
     t = t.exclude(finished=True)
     t = t.exclude(deleted=True)
     return t.order_by('-creation')
 
 def get_active_tests():
-    t = Test.objects.filter(approved=True)
+    t = Test.objects.select_related('dev', 'base').filter(approved=True)
     t = t.exclude(awaiting=True)
     t = t.exclude(finished=True)
     t = t.exclude(deleted=True)
     return t.order_by('-priority', '-currentllr')
 
 def get_completed_tests():
-    t = Test.objects.filter(finished=True)
+    t = Test.objects.select_related('dev', 'base').filter(finished=True)
     t = t.exclude(deleted=True)
     return t.order_by('-updated')
 
 def get_awaiting_tests():
-    t = Test.objects.filter(awaiting=True)
+    t = Test.objects.select_related('dev', 'base').filter(awaiting=True)
     t = t.exclude(finished=True)
     t = t.exclude(deleted=True)
     return t.order_by('-creation')
@@ -249,7 +329,7 @@ def getRecentMachines(minutes=5):
     target = datetime.datetime.utcnow()
     target = target.replace(tzinfo=timezone.utc)
     target = target - datetime.timedelta(minutes=minutes)
-    return Machine.objects.filter(updated__gte=target)
+    return Machine.objects.select_related('user').filter(updated__gte=target)
 
 def getMachineStatus(username=None):
 
@@ -258,6 +338,7 @@ def getMachineStatus(username=None):
     if username != None:
         machines = machines.filter(user__username=username)
 
+    machines = list(machines)
     return ": {0} Machines / ".format(len(machines)) + \
            "{0} Threads / ".format(sum([f.info['concurrency'] for f in machines])) + \
            "{0} MNPS ".format(round(sum([f.info['concurrency'] * f.mnps for f in machines]), 2))
@@ -265,8 +346,9 @@ def getMachineStatus(username=None):
 def getPaging(content, page, url, pagelen=25):
 
     start = max(0, pagelen * (page - 1))
-    end   = min(content.count(), pagelen * page)
-    count = 1 + math.ceil(content.count() / pagelen)
+    total = content.count()
+    end   = min(total, pagelen * page)
+    count = 1 + math.ceil(total / pagelen)
 
     part1 = list(range(1, min(4, count)))
     part2 = list(range(page - 2, page + 1))
@@ -596,7 +678,9 @@ def record_llr_history(test):
     if not history or history[0][0] != 0:
         history.insert(0, [0, 0.0])
 
-    path = llr_history_path(test.id)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w') as fout:
-        json.dump(history, fout)
+    write_json_file(llr_history_path(test.id), history)
+
+    try:
+        write_compact_llr_history(test, history)
+    except Exception:
+        pass

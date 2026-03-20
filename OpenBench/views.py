@@ -76,13 +76,13 @@ def render(request, template, content={}, always_allow=False, error=None, warnin
 
     if request.user.is_authenticated:
 
-        profile = Profile.objects.filter(user=request.user)
-        data.update({'profile' : profile.first()})
+        profile = Profile.objects.select_related('user').filter(user=request.user).first()
+        data.update({'profile' : profile})
 
-        if profile.first() and not profile.first().enabled:
+        if profile and not profile.enabled:
             request.session['error_message'] = ERROR_MESSAGES['disabled']
 
-        elif request.user.is_authenticated and not profile.first():
+        elif request.user.is_authenticated and not profile:
             request.session['error_message'] = ERROR_MESSAGES['fakeuser']
 
     if error:
@@ -314,7 +314,7 @@ def search(request):
     if request.method == 'GET':
         return render(request, 'search.html', {})
 
-    tests = Test.objects.all()
+    tests = Test.objects.select_related('dev', 'base').all()
 
     # Optional Selection box filters
 
@@ -417,7 +417,7 @@ def search(request):
 
 def users(request):
 
-    data = { 'profiles' : Profile.objects.order_by('-games', '-tests') }
+    data = { 'profiles' : Profile.objects.select_related('user').order_by('-games', '-tests') }
     return render(request, 'users.html', data)
 
 def event(request, id):
@@ -432,26 +432,64 @@ def events_actions(request, page=1):
 
     events = LogEvent.objects.all().filter(machine_id=0).order_by('-id')
     start, end, paging = OpenBench.utils.getPaging(events, page, 'events')
+    events = list(events[start:end])
+    preload_event_tests(events)
 
-    data = { 'events' : events[start:end], 'paging' : paging };
+    data = { 'events' : events, 'paging' : paging };
     return render(request, 'events.html', data)
 
 def events_errors(request, page=1):
 
     events = LogEvent.objects.all().exclude(machine_id=0).order_by('-id')
     start, end, paging = OpenBench.utils.getPaging(events, page, 'errors')
+    events = list(events[start:end])
+    preload_event_tests(events)
 
-    data = { 'events' : events[start:end], 'paging' : paging };
+    data = { 'events' : events, 'paging' : paging };
     return render(request, 'errors.html', data)
+
+def preload_event_tests(events):
+
+    test_ids = { event.test_id for event in events if event.test_id }
+    tests = {
+        test.id : test
+        for test in Test.objects.select_related('dev').filter(id__in=test_ids)
+    }
+
+    for event in events:
+        event.test_name = str(event.test_id)
+        event.test_time_control = ''
+
+        test = tests.get(event.test_id)
+        if not test:
+            continue
+
+        event.test_name = test.dev.name[:16].upper() if re.search('^[0-9a-fA-F]{40}$', test.dev.name) else test.dev.name
+        event.test_time_control = test.dev_time_control
 
 def machines(request, machineid=None):
 
     if machineid == None:
-        data = { 'machines' : OpenBench.utils.getRecentMachines() }
+        machines = list(OpenBench.utils.getRecentMachines())
+        workload_ids = [machine.workload for machine in machines if machine.workload]
+        workloads = {
+            workload.id : workload
+            for workload in Test.objects.select_related('dev').filter(id__in=workload_ids)
+        }
+
+        for machine in machines:
+            workload = workloads.get(machine.workload)
+            machine.workload_url = '/%s/%d/' % (
+                'tune' if workload and workload.test_mode == 'SPSA' else 'test',
+                machine.workload
+            ) if workload else None
+            machine.workload_name = workload.dev.name[:16].lower() if workload and re.search('^[0-9a-fA-F]{40}$', workload.dev.name) else (workload.dev.name if workload else None)
+
+        data = { 'machines' : machines }
         return render(request, 'machines.html', data)
 
     try:
-        data = { 'machine' : OpenBench.models.Machine.objects.get(id=machineid) }
+        data = { 'machine' : OpenBench.models.Machine.objects.select_related('user').get(id=machineid) }
         return render(request, 'machine.html', data)
 
     except:
@@ -469,7 +507,7 @@ def test(request, id, action=None):
         return modify_workload(request, id, action)
 
     # Verify that the Test id exists
-    if not (test := Test.objects.filter(id=id).first()):
+    if not (test := Test.objects.select_related('dev', 'base').filter(id=id).first()):
         return redirect(request, '/index/', error='No such Test exists')
 
     # Verify that it is indeed a Test and not a Tune
@@ -489,7 +527,7 @@ def tune(request, id, action=None):
         return modify_workload(request, id, action)
 
     # Verify that the Tune id exists
-    if not (tune := Test.objects.filter(id=id).first()):
+    if not (tune := Test.objects.select_related('dev', 'base').filter(id=id).first()):
         return redirect(request, '/index/', error='No such Tune exists')
 
     # Verify that it is indeed a Tune and not a Test
@@ -509,7 +547,7 @@ def datagen(request, id, action=None):
         return modify_workload(request, id, action)
 
     # Verify that the Datagen id exists
-    if not (datagen := Test.objects.filter(id=id).first()):
+    if not (datagen := Test.objects.select_related('dev', 'base').filter(id=id).first()):
         return redirect(request, '/index/', error='No such Datagen exists')
 
     # Verify that it is indeed a Datagen and not a Tune
@@ -521,6 +559,21 @@ def datagen(request, id, action=None):
         return redirect(request, '/test/%d' % (id))
 
     return view_workload(request, datagen, 'DATAGEN')
+
+def test_llr_history(request, id):
+
+    if OPENBENCH_CONFIG['require_login_to_view'] and not request.user.is_authenticated:
+        return HttpResponse(status=403)
+
+    if not (test := Test.objects.filter(id=id).first()):
+        return HttpResponse(status=404)
+
+    if test.test_mode != 'SPRT':
+        return HttpResponse(status=204)
+
+    from OpenBench.templatetags.mytags import llr_history_graph
+
+    return HttpResponse(str(llr_history_graph(test)), content_type='text/plain; charset=utf-8')
 
 def create_test(request):
     return create_workload(request, 'TEST')

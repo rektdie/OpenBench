@@ -7,7 +7,13 @@
     <script src="{% static 'copy_text.js' %}?{{ static_version }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.llr-history-widget').forEach(function(widget) {
+            var llrHistoryRequest = null;
+
+            function initializeLlrHistoryWidget(widget) {
+                if (!widget || widget.dataset.initialized === 'true') return;
+
+                widget.dataset.initialized = 'true';
+
                 var history = JSON.parse(widget.dataset.history || '[]');
                 if (!history.length) return;
                 var realPoints = history.filter(function(point) { return !point.estimated; });
@@ -104,7 +110,79 @@
                 });
 
                 clearActivePoint();
-            });
+            }
+
+            function initializeLlrHistoryWidgets(root) {
+                (root || document).querySelectorAll('.llr-history-widget').forEach(function(widget) {
+                    initializeLlrHistoryWidget(widget);
+                });
+            }
+
+            function ensureLlrHistoryWidget() {
+                var existing = document.querySelector('.llr-history-widget');
+                if (existing) {
+                    initializeLlrHistoryWidget(existing);
+                    return Promise.resolve(existing);
+                }
+
+                var container = document.getElementById('llr-history-container');
+                if (!container || !container.dataset.historyUrl) {
+                    return Promise.resolve(null);
+                }
+
+                if (llrHistoryRequest) {
+                    return llrHistoryRequest;
+                }
+
+                llrHistoryRequest = fetch(container.dataset.historyUrl, {
+                    credentials: 'same-origin'
+                }).then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Unable to load history graph');
+                    }
+
+                    return response.text();
+                }).then(function(markup) {
+                    container.innerHTML = markup;
+                    container.removeAttribute('data-history-url');
+
+                    var widget = container.querySelector('.llr-history-widget');
+                    initializeLlrHistoryWidget(widget);
+                    llrHistoryRequest = null;
+                    return widget;
+                }).catch(function() {
+                    container.innerHTML = '<div class="llr-history-placeholder llr-history-placeholder-error">Unable to load history graph.</div>';
+                    llrHistoryRequest = null;
+                    return null;
+                });
+
+                return llrHistoryRequest;
+            }
+
+            function queueLlrHistoryWidgetLoad() {
+                var container = document.getElementById('llr-history-container');
+                if (!container || !container.dataset.historyUrl) return;
+
+                function requestGraphAfterPaint() {
+                    window.requestAnimationFrame(function() {
+                        window.requestAnimationFrame(function() {
+                            setTimeout(function() {
+                                ensureLlrHistoryWidget();
+                            }, 250);
+                        });
+                    });
+                }
+
+                if (document.readyState === 'complete') {
+                    requestGraphAfterPaint();
+                    return;
+                }
+
+                window.addEventListener('load', requestGraphAfterPaint, { once: true });
+            }
+
+            initializeLlrHistoryWidgets(document);
+            queueLlrHistoryWidgetLoad();
         });
     </script>
 {% endblock %}
@@ -124,7 +202,7 @@
             <tr><td class="td-label">{{dev_text}} Sha</td><td>{{workload.dev.sha}}</td></tr>
             <tr><td class="td-label">{{dev_text}} Branch</td><td class="branch_name">{{workload.dev.name|prettyName}}</td></tr>
             <tr><td class="td-label">{{dev_text}} Bench</td><td>{{workload.dev.bench}}</td></tr>
-            <tr><td class="td-label">{{dev_text}} Network</td><td><a href="{{workload|network_download_link:'dev'}}">{{workload.dev_netname}}</td></tr>
+            <tr><td class="td-label">{{dev_text}} Network</td><td><a href="{{dev_network_url}}">{{workload.dev_netname}}</a></td></tr>
             <tr><td class="td-label">{{dev_text}} Options</td><td>{{workload.dev_options}}</td></tr>
             <tr><td class="td-label">{{dev_text}} Time</td><td>{{workload.dev_time_control}}</td></tr>
 
@@ -134,13 +212,13 @@
                 <tr><td class="td-label">Base Sha</td><td>{{workload.base.sha}}</td></tr>
                 <tr><td class="td-label">Base Branch</td><td class="branch_name">{{workload.base.name|prettyName}}</td></tr>
                 <tr><td class="td-label">Base Bench</td><td>{{workload.base.bench}}</td></tr>
-                <tr><td class="td-label">Base Network</td><td><a href="{{workload|network_download_link:'base'}}">{{workload.base_netname}}</td></tr>
+                <tr><td class="td-label">Base Network</td><td><a href="{{base_network_url}}">{{workload.base_netname}}</a></td></tr>
                 <tr><td class="td-label">Base Options</td><td>{{workload.base_options}}</td></tr>
                 <tr><td class="td-label">Base Time</td><td>{{workload.base_time_control}}</td></tr>
             {% endif %}
 
-            {% if workload|book_download_link %}
-                <tr><td class="td-label">Opening Book</td><td><a href="{{workload|book_download_link}}">{{workload.book_name}}</a></td></tr>
+            {% if book_url %}
+                <tr><td class="td-label">Opening Book</td><td><a href="{{book_url}}">{{workload.book_name}}</a></td></tr>
             {% else %}
                 <tr><td class="td-label">Opening Book</td><td><a>{{workload.book_name}}</a></td></tr>
             {% endif %}
@@ -298,7 +376,25 @@
         {% if workload.test_mode == "SPRT" %}
             <div class="llr-history-panel" title="LLR history over the lifetime of the test">
                 <div class="llr-history-label">LLR History</div>
-                {{workload|llr_history_graph}}
+                <div id="llr-history-container" class="llr-history-loader" data-history-url="{{llr_history_endpoint}}">
+                    <div class="llr-history-chart">
+                        <div class="llr-history-yaxis">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                        </div>
+                        <div class="llr-history-main">
+                            <div class="llr-history-plot">
+                                <div class="llr-history-placeholder">Loading history graph...</div>
+                            </div>
+                            <div class="llr-history-xaxis">
+                                <div>0</div>
+                                <div></div>
+                                <div>{{workload.games}} g</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         {% endif %}
     </div>
