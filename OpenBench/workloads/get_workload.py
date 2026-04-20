@@ -166,8 +166,7 @@ def compute_resource_distribution(workloads, machine, has_focus):
 
     for x in OpenBench.utils.getRecentMachines():
         if x != machine and x.workload in worker_dist:
-            if has_focus or worker_dist[x.workload]['engine'] not in x.info.get('focus', []):
-                worker_dist[x.workload]['threads'] += x.info['concurrency']
+            worker_dist[x.workload]['threads'] += x.info['concurrency']
 
     # Count of tests that exist for a particular dev_engine
 
