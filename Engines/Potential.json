@@ -49,7 +49,7 @@
             "both_options"      : "Threads=8 Hash=256",
             "both_time_control" : "20.0+0.2",
             "workload_size"     : 16
-        }
+        },
 
         "SMP STC" : {
             "both_options"      : "Threads=8 Hash=256",
