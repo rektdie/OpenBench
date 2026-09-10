@@ -268,12 +268,16 @@ def index(request, page=1):
     completed = OpenBench.utils.get_completed_tests()
     awaiting  = OpenBench.utils.get_awaiting_tests()
 
-    start, end, paging = OpenBench.utils.getPaging(completed, page, 'index')
+    # Active tests are already listed above the finished ones by the
+    # template. Keep finished tests newest-first and just show a small
+    # page of them at a time, so there isn't much to scroll through.
+    start, end, paging = OpenBench.utils.getPaging(completed, page, 'index', pagelen=7)
+    completed_page = list(completed[start:end])
 
     data = {
         'pending'   : pending,
         'active'    : active,
-        'completed' : completed[start:end],
+        'completed' : completed_page,
         'awaiting'  : awaiting,
         'paging'    : paging,
         'status'    : OpenBench.utils.getMachineStatus(),
@@ -288,12 +292,13 @@ def user(request, username, page=1):
     completed = OpenBench.utils.get_completed_tests().filter(author=username)
     awaiting  = OpenBench.utils.get_awaiting_tests().filter(author=username)
 
-    start, end, paging = OpenBench.utils.getPaging(completed, page, 'user/%s' % (username))
+    start, end, paging = OpenBench.utils.getPaging(completed, page, 'user/%s' % (username), pagelen=7)
+    completed_page = list(completed[start:end])
 
     data = {
         'pending'   : pending,
         'active'    : active,
-        'completed' : completed[start:end],
+        'completed' : completed_page,
         'awaiting'  : awaiting,
         'paging'    : paging,
         'status'    : OpenBench.utils.getMachineStatus(username),
@@ -304,15 +309,30 @@ def user(request, username, page=1):
 def greens(request, page=1):
 
     completed = OpenBench.utils.get_completed_tests().filter(passed=True)
-    start, end, paging = OpenBench.utils.getPaging(completed, page, 'greens')
+    start, end, paging = OpenBench.utils.getPaging(completed, page, 'greens', pagelen=7)
+    completed_page = list(completed[start:end])
 
-    data = { 'completed' : completed[start:end], 'paging' : paging }
+    data = { 'completed' : completed_page, 'paging' : paging }
     return render(request, 'index.html', data)
 
-def search(request):
+def search(request, page=1):
 
     if request.method == 'GET':
-        return render(request, 'search.html', {})
+
+        # A page link (a plain GET to /search/<page>/) can't resubmit the
+        # original filters, so reuse the last search's matching test ids,
+        # which were stashed in the session when the search was run.
+        ids = request.session.get('search_result_ids')
+
+        if not ids:
+            return render(request, 'search.html', {})
+
+        tests = list(Test.objects.select_related('dev', 'base').filter(id__in=ids))
+        order = { test_id : i for i, test_id in enumerate(ids) }
+        tests.sort(key=lambda test: order[test.id])
+
+        start, end, paging = OpenBench.utils.getPaging(tests, page, 'search', pagelen=7)
+        return render(request, 'search.html', { 'tests' : tests[start:end], 'paging' : paging })
 
     tests = Test.objects.select_related('dev', 'base').all()
 
@@ -322,7 +342,7 @@ def search(request):
         tests = tests.filter(author=request.POST['author'])
 
     if request.POST['engine']:
-        tests = tests.filter(Q(base_engine=request.POST['engine']) | Q(dev_engine=request.POST['engine']))
+        tests = tests.filter(Q(base_engine__iexact=request.POST['engine']) | Q(dev_engine__iexact=request.POST['engine']))
 
     if request.POST['opening-book']:
         tests = tests.filter(book_name=request.POST['opening-book'])
@@ -408,8 +428,12 @@ def search(request):
 
         filtered.append(test)
 
+    filtered = list(reversed(filtered))
+    request.session['search_result_ids'] = [test.id for test in filtered]
+
     error = 'No matching tests found' if not len(filtered) else None
-    return render(request, 'search.html', { 'tests' : reversed(filtered) }, error=error)
+    start, end, paging = OpenBench.utils.getPaging(filtered, 1, 'search', pagelen=7)
+    return render(request, 'search.html', { 'tests' : filtered[start:end], 'paging' : paging }, error=error)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                           GENERAL DATA TABLE VIEWS                          #
@@ -431,7 +455,7 @@ def event(request, id):
 def events_actions(request, page=1):
 
     events = LogEvent.objects.all().filter(machine_id=0).order_by('-id')
-    start, end, paging = OpenBench.utils.getPaging(events, page, 'events')
+    start, end, paging = OpenBench.utils.getPaging(events, page, 'events', pagelen=10)
     events = list(events[start:end])
     preload_event_tests(events)
 
@@ -441,7 +465,7 @@ def events_actions(request, page=1):
 def events_errors(request, page=1):
 
     events = LogEvent.objects.all().exclude(machine_id=0).order_by('-id')
-    start, end, paging = OpenBench.utils.getPaging(events, page, 'errors')
+    start, end, paging = OpenBench.utils.getPaging(events, page, 'errors', pagelen=10)
     events = list(events[start:end])
     preload_event_tests(events)
 

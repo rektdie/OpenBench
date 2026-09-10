@@ -46,7 +46,7 @@ body, html, main{
     padding-right: 2rem;
 }
 
-#content {
+.term-page {
     max-width: calc(min(100%,1000px));
     width: 100%;
     white-space: nowrap;
@@ -88,35 +88,35 @@ body, html, main{
 
 /* Table Striping, with overriding for the Table Header */
 
-#content .stripes tr:nth-child(odd):not(.table-header) {
+.term-page .stripes tr:nth-child(odd):not(.table-header) {
     background-color: var(--color1);
 }
 
-#content .stripes tr:nth-child(even):not(.table-header) {
+.term-page .stripes tr:nth-child(even):not(.table-header) {
     background-color: var(--color2);
 }
 
-#content .stripes th {
+.term-page .stripes th {
     background-color: #242933;
 }
 
 /* Tables that have hoverable table rows */
 
-#content .hoverable tr:nth-child(odd):hover:not(.table-header) {
+.term-page .hoverable tr:nth-child(odd):hover:not(.table-header) {
     background-color: #434C5E;
 }
 
-#content .hoverable tr:nth-child(even):hover:not(.table-header) {
+.term-page .hoverable tr:nth-child(even):hover:not(.table-header) {
     background-color: #434C5E;
 }
 
-#content .hoverable tr:hover{
+.term-page .hoverable tr:hover{
     background-color: var(--color1);
 }
 
 /* Tables that are too long can wrap words */
 
-#content .wrappable td {
+.term-page .wrappable td {
     white-space: pre-wrap;
     word-break: break-word;
     word-wrap: break-word;
@@ -124,27 +124,30 @@ body, html, main{
 
 /* Things which enable a Cursor Pointer event */
 
-#content .cursor {
+.term-page .cursor {
     cursor: pointer;
 }
 
 /* Table Headers in General */
 
-#content .table-header th:first-child {
+.term-page .table-header th:first-child {
     border-top-left-radius: 12px;
 }
 
-#content .table-header th:last-child {
+.term-page .table-header th:last-child {
     border-top-right-radius: 12px;
 }
 
-#content .table-header th {
+/* Section titles (Pending/Awaiting/Active/Finished) lead their rows, so
+   only the top corners need rounding -- the bottom edge sits flush
+   against the first row of the section it introduces. */
+.term-page .table-header th {
     color: var(--color-font3);
     font-weight: 400;
     background-color: #242933;
 }
 
-#content .table-small-header th {
+.term-page .table-small-header th {
     color: var(--color-font3);
     font-size: small;
     background-color: #242933;
@@ -152,12 +155,7 @@ body, html, main{
 
 /* Table Spacer for chaining Tables as a hack */
 
-#content .table-spacer th, #content .table-spacer tr {
-    background-color: var(--color1);
-    height: 1rem;
-}
-
-#content .table-spacer-small th, #content .table-spacer-small tr {
+.term-page .table-spacer-small th, .term-page .table-spacer-small tr {
     background-color: #242933;
     height: 0.4rem;
     padding: 0px;
@@ -165,315 +163,452 @@ body, html, main{
 
 /* Generic Table CSS for all Tables */
 
-#content table {
+.term-page table {
     line-height: 96%;
     border-collapse: collapse;
 }
 
-#content td {
+.term-page td {
     color: var(--color-font2);
     border-bottom: 1px #4C566A solid;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
-#content th, #content td {
+.term-page th, .term-page td {
     padding: 10px 12px 6px 12px;
 }
 
-#content .anchor-container {
+.term-page .anchor-container {
     display: flex;
     justify-content: space-between;
 }
 
-#content .anchor-container > .anchorbutton {
+.term-page .anchor-container > .anchorbutton {
     flex: 1;
     margin-right: 4px;
 }
 
-#content .anchor-container > .anchorbutton:last-child {
+.term-page .anchor-container > .anchorbutton:last-child {
     margin-right: 0px;
 }
 
-#content .anchorbutton {
-    border-radius: 4px;
+.term-page .anchorbutton {
     padding: 8px 0px 6px;
-    border-color: transparent;
-    color: var(--color-font1);
+    background-color: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 184, 77, 0.35);
+    color: var(--phosphor-bright, #ffd699);
     display: inline-block;
     text-align: center;
-    transition: background-color 0.3s ease;
-    font-family: "Courier Prime", serif;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    font-family: "Courier Prime", "Courier New", monospace;
     font-size: 13px;
     cursor: pointer;
 }
 
-/* Buttons */
-#content .btn-blue {
-    background-color: #6C63FF;          /* modern indigo-blue */
-    color: #ffffff;
+/* Buttons: same dark-glass + colored-glow treatment as the result badges,
+   so actions read as terminal keys rather than a bolted-on modern UI.
+   Blue/start are both "go ahead" actions -- start is the solid/filled
+   version for primary create flows, blue the outline version everywhere
+   else -- yellow/red/preset stay colour-coded by how risky the action is. */
+
+.term-page .btn-blue {
+    border-color: rgba(255, 184, 77, 0.55);
+    color: var(--phosphor-bright, #ffd699);
+    text-shadow: 0 0 6px rgba(255, 184, 77, 0.45);
 }
-#content .btn-blue:hover {
-    background-color: #837BFF;
+.term-page .btn-blue:hover {
+    background-color: rgba(255, 184, 77, 0.16);
 }
 
-#content .btn-start {
-    background-color: #34495E;          /* unchanged navy-gray */
-    color: #ffffff;
+.term-page .btn-start {
+    background-color: rgba(255, 184, 77, 0.16);
+    border-color: var(--phosphor, #ffb84d);
+    color: var(--phosphor-bright, #ffd699);
+    text-shadow: 0 0 6px rgba(255, 184, 77, 0.55);
 }
-#content .btn-start:hover {
-    background-color: #4A6278;
-}
-
-#content .btn-preset {
-    background-color: #00B894;          /* teal green */
-    color: #ffffff;
-}
-#content .btn-preset:hover {
-    background-color: #17DDB2;
+.term-page .btn-start:hover {
+    background-color: rgba(255, 184, 77, 0.28);
 }
 
-#content .btn-yellow {
-    background-color: #F5B041;          /* golden amber */
-    color: #1F1400;                     /* dark brown for contrast */
+.term-page .btn-preset {
+    border-color: rgba(111, 179, 224, 0.6);
+    color: #6FB3E0;
+    text-shadow: 0 0 6px rgba(111, 179, 224, 0.45);
 }
-#content .btn-yellow:hover {
-    background-color: #FFC966;
-}
-
-#content .btn-red {
-    background-color: #E74C3C;          /* soft red */
-    color: #ffffff;
-}
-#content .btn-red:hover {
-    background-color: #FF6B5E;
+.term-page .btn-preset:hover {
+    background-color: rgba(111, 179, 224, 0.14);
 }
 
-#content .btn-disabled {
-    background-color: #444;
-    color: #999;
+.term-page .btn-yellow {
+    border-color: rgba(255, 184, 77, 0.6);
+    color: var(--phosphor, #ffb84d);
+    text-shadow: 0 0 6px rgba(255, 184, 77, 0.5);
+}
+.term-page .btn-yellow:hover {
+    background-color: rgba(255, 184, 77, 0.16);
+}
+
+.term-page .btn-red {
+    border-color: rgba(255, 107, 107, 0.65);
+    color: var(--phosphor-red, #ff6b6b);
+    text-shadow: 0 0 6px rgba(255, 107, 107, 0.5);
+}
+.term-page .btn-red:hover {
+    background-color: rgba(255, 107, 107, 0.14);
+}
+
+.term-page .btn-disabled {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 184, 77, 0.15);
+    color: rgba(255, 214, 153, 0.35);
     cursor: not-allowed;
 }
 
-#content .copy-button {
+/* Momentary states for copy_text() feedback -- same green/red already
+   used for statblock-green/statblock-red, so "copied" reads as the same
+   kind of "success" signal as a passing test elsewhere in the theme. */
+.term-page .btn-copied {
+    background-color: rgba(123, 203, 139, 0.16);
+    border-color: rgba(123, 203, 139, 0.65);
+    color: #7BCB8B;
+    text-shadow: 0 0 6px rgba(123, 203, 139, 0.55);
+}
+
+.term-page .btn-copy-error {
+    background-color: rgba(255, 107, 107, 0.14);
+    border-color: rgba(255, 107, 107, 0.65);
+    color: var(--phosphor-red, #ff6b6b);
+    text-shadow: 0 0 6px rgba(255, 107, 107, 0.5);
+}
+
+.term-page .copy-button {
     color: var(--color-font2);
     transition: color 0.2s ease-in-out;
 }
 
-#content .copy-button:hover {
+.term-page .copy-button:hover {
     color: var(--color-font3);
     cursor: pointer;
 }
 
 /* Short StatBlock to show SPRT and Test Results */
 
-#content .statblock {
+.term-page .statblock {
     font-size: 13px;
-    color: black;
-    line-height: 92%;
-    background-color: #D8DEE9;
-    font-family: "Courier New";
-    border-radius: 4px;
-    padding: 7px 10px 4px;
+    line-height: 1.15;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    font-family: "Courier Prime", "Courier New", monospace;
+    background-color: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 184, 77, 0.25);
+    color: var(--phosphor-dim, #cc7a1a);
+    padding: 6px 10px 5px;
 }
 
-#content .statblock-green {
-    background-color: #24C486;   /* balanced mint green */
-    color: #101F1A;               /* dark readable text */
+.term-page .statblock-green {
+    border-color: rgba(123, 203, 139, 0.6);
+    color: #7BCB8B;
+    text-shadow: 0 0 6px rgba(123, 203, 139, 0.55);
 }
 
-#content .statblock-blue {
-    background-color: #3FA9F5;   /* modern soft blue */
-    color: #0E1A26;
+.term-page .statblock-blue {
+    border-color: rgba(111, 179, 224, 0.6);
+    color: #6FB3E0;
+    text-shadow: 0 0 6px rgba(111, 179, 224, 0.5);
 }
 
-#content .statblock-yellow {
-    background-color: #FFCB4A;   /* golden yellow */
-    color: #2B2300;
+.term-page .statblock-yellow {
+    border-color: rgba(255, 184, 77, 0.6);
+    color: var(--phosphor-bright, #ffd699);
+    text-shadow: 0 0 6px rgba(255, 184, 77, 0.55);
 }
 
-#content .statblock-red {
-    background-color: #FF6B6B;   /* soft crimson red */
-    color: #2C0D0D;
+.term-page .statblock-red {
+    border-color: rgba(255, 107, 107, 0.65);
+    color: var(--phosphor-red, #ff6b6b);
+    text-shadow: 0 0 6px rgba(255, 107, 107, 0.5);
 }
 
 
-#content .redlink {
+.term-page .redlink {
     color: #BF616A;
 }
 
 /* Long StatBlock which we can copy */
 
-#content .long-statblock {
+.term-page .long-statblock {
     background-color: var(--color3);
     color: var(--color-font2);
-    border-radius: 4px;
     padding: 0.50rem 0.75rem;
 }
 
-#content .llr-history-panel {
+/* Priority / Throughput / Workload Size editor -- boxed to match the
+   other panels in the narrow #actions sidebar (see .llr-history-panel
+   below) instead of the wide, side-by-side label+input rows the create
+   test form uses, which left almost no room for the input itself once
+   squeezed into this column. */
+.term-page .workload-settings-panel {
     margin: 0.5rem 0 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 184, 77, 0.35);
+    background: var(--tube-black-2, #140d07);
+    overflow: hidden;
 }
 
-#content .llr-history-loader {
-    width: 372px;
+.term-page .workload-settings-label {
+    text-align: center;
+    color: var(--phosphor-dim, #cc7a1a);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-shadow: 0 0 6px rgba(255, 184, 77, 0.45);
+    padding: 5px 8px 4px;
+    background: rgba(255, 184, 77, 0.07);
+    border-bottom: 1px solid rgba(255, 184, 77, 0.3);
 }
 
-#content .llr-history-widget {
+.term-page .workload-settings-form {
+    padding: 0.7rem 0.75rem 0.75rem;
+    box-sizing: border-box;
+}
+
+.term-page .workload-settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 0.7rem;
+}
+
+.term-page .workload-settings-field label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--color-font3);
+    margin-bottom: 0.3rem;
+}
+
+.term-page .workload-settings-field input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--color3);
+    border-radius: 4px;
+    padding: 8px 6px 6px;
+    background-color: var(--color2);
+    color: var(--color-font2);
+    font-family: "Courier Prime", serif;
+    text-align: center;
+}
+
+.term-page .workload-settings-field input:focus {
+    outline: none;
+    border-color: var(--color3);
+    box-shadow: 0 0 0 2px rgba(77, 144, 254, 0.75);
+}
+
+.term-page .llr-history-panel {
+    margin: 0.5rem 0 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 184, 77, 0.35);
+    background: var(--tube-black-2, #140d07);
+    overflow: hidden;
+}
+
+.term-page .llr-history-loader {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.55rem 0.65rem 0.45rem;
+}
+
+.term-page .llr-history-widget {
     position: relative;
-    width: 372px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.55rem 0.65rem 0.45rem;
     z-index: 0;
 }
 
-#content .llr-history-chart {
+.term-page .llr-history-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.term-page .llr-history-row {
     display: flex;
     align-items: stretch;
     gap: 0.55rem;
 }
 
-#content .llr-history-yaxis {
+.term-page .llr-history-yaxis {
+    position: relative;
     width: 44px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    color: #A7B1C2;
+    flex: 0 0 auto;
+    color: var(--phosphor-dim, #cc7a1a);
     font-size: 10px;
     text-align: right;
-    padding: 0.35rem 0 1.6rem;
 }
 
-#content .llr-history-main {
-    display: flex;
-    flex-direction: column;
-    gap: 0.28rem;
+/* Positioned to match the SVG's own top_pad/height and
+   (height-bottom_pad)/height fractions exactly (8/112 and 104/112 in
+   OpenBench/templatetags/mytags.py::llr_history_graph), so each label
+   sits on its gridline regardless of the plot's rendered pixel size. */
+.term-page .llr-history-yaxis > div {
+    position: absolute;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    white-space: nowrap;
 }
 
-#content .llr-history-plot {
+.term-page .llr-history-yaxis > div:nth-child(1) { top: 7.14%; }
+.term-page .llr-history-yaxis > div:nth-child(2) { top: 50%; }
+.term-page .llr-history-yaxis > div:nth-child(3) { top: 92.86%; }
+
+.term-page .llr-history-plot {
     position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
     z-index: 0;
 }
 
-#content .llr-history-placeholder {
-    width: 320px;
-    height: 112px;
+.term-page .llr-history-placeholder {
+    width: 100%;
+    aspect-ratio: 320 / 112;
+    height: auto;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
-    border: 1px solid #4C566A;
-    background: linear-gradient(135deg, #242933 0%, #2C3440 100%);
-    color: #A7B1C2;
+    color: var(--phosphor-dim, #cc7a1a);
     font-size: 0.72rem;
     letter-spacing: 0.02em;
 }
 
-#content .llr-history-placeholder-error {
-    color: #E07A7A;
+.term-page .llr-history-placeholder-error {
+    color: var(--phosphor-red, #ff6b6b);
 }
 
-#content .llr-history-label {
-    color: var(--color-font3);
-    font-size: 0.85rem;
-    margin-bottom: 0.2rem;
+.term-page .llr-history-label {
+    text-align: center;
+    color: var(--phosphor-dim, #cc7a1a);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-shadow: 0 0 6px rgba(255, 184, 77, 0.45);
+    padding: 5px 8px 4px;
+    background: rgba(255, 184, 77, 0.07);
+    border-bottom: 1px solid rgba(255, 184, 77, 0.3);
 }
 
-#content .llr-history-graph {
+.term-page .llr-history-graph {
     display: block;
-    width: 320px;
-    height: 112px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 320 / 112;
 }
 
-#content .llr-history-graph .llr-bg {
-    fill: #242933;
-    stroke: #4C566A;
+.term-page .llr-history-graph .llr-bg {
+    fill: none;
+    stroke: none;
+}
+
+.term-page .llr-history-graph .llr-grid-line {
+    stroke: rgba(255, 184, 77, 0.12);
     stroke-width: 1;
 }
 
-#content .llr-history-graph .llr-grid-line {
-    stroke: rgba(236, 239, 244, 0.14);
-    stroke-width: 1;
-}
-
-#content .llr-history-graph .llr-boundary {
-    stroke: #BF616A;
+.term-page .llr-history-graph .llr-boundary {
+    stroke: var(--phosphor-red, #ff6b6b);
     stroke-width: 1;
     stroke-dasharray: 4 3;
     opacity: 0.85;
 }
 
-#content .llr-history-graph .llr-zero {
-    stroke: #81A1C1;
+.term-page .llr-history-graph .llr-zero {
+    stroke: var(--phosphor-dim, #cc7a1a);
     stroke-width: 1;
-    opacity: 0.7;
+    opacity: 0.75;
 }
 
-#content .llr-history-graph .llr-path-positive,
-#content .llr-history-graph .llr-path-negative {
+.term-page .llr-history-graph .llr-path-positive,
+.term-page .llr-history-graph .llr-path-negative {
     fill: none;
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-#content .llr-history-graph .llr-path-positive {
-    stroke: #7BCB8B;
+.term-page .llr-history-graph .llr-path-positive {
+    stroke: var(--phosphor-bright, #ffd699);
+    filter: drop-shadow(0 0 2.5px rgba(255, 214, 153, 0.65));
 }
 
-#content .llr-history-graph .llr-path-negative {
-    stroke: #E07A7A;
+.term-page .llr-history-graph .llr-path-negative {
+    stroke: var(--phosphor-red, #ff6b6b);
+    filter: drop-shadow(0 0 2.5px rgba(255, 107, 107, 0.55));
 }
 
-#content .llr-history-xaxis {
+.term-page .llr-history-xaxis {
     display: flex;
     justify-content: space-between;
-    color: #A7B1C2;
+    margin-left: calc(44px + 0.55rem);
+    color: var(--phosphor-dim, #cc7a1a);
     font-size: 10px;
     padding: 0 0.2rem;
 }
 
-#content .llr-history-graph .llr-point {
-    fill: #ECEFF4;
+.term-page .llr-history-graph .llr-point {
+    fill: var(--phosphor-bright, #ffd699);
 }
 
-#content .llr-history-graph .llr-hover-line {
-    stroke: #ECEFF4;
+.term-page .llr-history-graph .llr-hover-line {
+    stroke: var(--phosphor-bright, #ffd699);
     stroke-width: 1;
     stroke-dasharray: 2 2;
     opacity: 0;
 }
 
-#content .llr-history-graph .llr-hover-point {
-    fill: #ECEFF4;
+.term-page .llr-history-graph .llr-hover-point {
+    fill: var(--tube-black-2, #140d07);
     stroke-width: 1.5;
     opacity: 0;
 }
 
-#content .llr-history-graph .llr-hover-line.active,
-#content .llr-history-graph .llr-hover-point.active {
-    opacity: 0.85;
+.term-page .llr-history-graph .llr-hover-line.active,
+.term-page .llr-history-graph .llr-hover-point.active {
+    opacity: 0.9;
 }
 
-#content .llr-history-graph .llr-hover-point-positive {
-    stroke: #7BCB8B;
+.term-page .llr-history-graph .llr-hover-point-positive {
+    stroke: var(--phosphor-bright, #ffd699);
 }
 
-#content .llr-history-graph .llr-hover-point-negative {
-    stroke: #E07A7A;
+.term-page .llr-history-graph .llr-hover-point-negative {
+    stroke: var(--phosphor-red, #ff6b6b);
 }
 
-#content .llr-history-graph .llr-hitbox {
+.term-page .llr-history-graph .llr-hitbox {
     fill: transparent;
     cursor: crosshair;
 }
 
-#content .llr-history-tooltip {
+.term-page .llr-history-tooltip {
     position: absolute;
     left: 0;
     top: 0;
     padding: 0.18rem 0.4rem 0.12rem;
     border-radius: 4px;
-    background-color: rgba(36, 41, 51, 0.96);
-    border: 1px solid #4C566A;
-    color: var(--color-font1);
+    background-color: rgba(20, 13, 7, 0.96);
+    border: 1px solid rgba(255, 184, 77, 0.4);
+    color: var(--phosphor-bright, #ffd699);
     font-size: 0.72rem;
+    text-shadow: 0 0 4px rgba(255, 184, 77, 0.5);
     pointer-events: none;
     opacity: 0;
     transform: translateY(2px);
@@ -482,31 +617,40 @@ body, html, main{
     z-index: 1;
 }
 
-#content .llr-history-tooltip.active {
+.term-page .llr-history-tooltip.active {
     opacity: 1;
     transform: translateY(0);
 }
 
 /* Test Views */
 
-#content #config {
-    float: left;
+.workload-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
 }
 
-#content #actions {
-    float: left;
+.term-page #config {
+    flex: 1 1 480px;
+    min-width: 0;
 }
 
-#content #results {
-    display: inline-block;
-    width: inherit;
+.term-page #actions {
+    flex: 0 1 340px;
+    min-width: 280px;
 }
 
-#content .test-config {
+.term-page #results {
+    display: block;
+    width: 100%;
+}
+
+.term-page .test-config {
     font-size: 1.0rem;
 }
 
-#content .test-config .td-label {
+.term-page .test-config .td-label {
     color: var(--color-font1);
 }
 
@@ -517,46 +661,46 @@ td pre {
     padding: 0px;
 }
 
-#content .error-message {
+.term-page .error-message {
     color: #BF616A;
 }
 
-#content .warning-message {
+.term-page .warning-message {
     color: #EBCB8B;
 }
 
-#content .status-message {
+.term-page .status-message {
     color: #A3BE8C;
 }
 
-#content .site-title {
+.term-page .site-title {
     color: var(--color-font3);
 }
 
-#content .default-network {
+.term-page .default-network {
     color: var(--color-font3);
     transform: scale(1.10);
 }
 
-#content .was-default-network {
+.term-page .was-default-network {
     color: #EBCB8B;
     transform: scale(0.90);
 }
 
-#content .non-default-network {
+.term-page .non-default-network {
     color: var(--color-font1);
     transform: scale(0.70);
 }
 
-#content .numeric {
+.term-page .numeric {
     text-align: right;
 }
 
-#content .branch_name {
+.term-page .branch_name {
     font-style: italic;
 }
 
-#content .active-highlight {
+.term-page .active-highlight {
     border-left: 4px solid var(--color-font3);
 }
 
@@ -597,7 +741,7 @@ td pre {
         padding: 0 8px;
     }
 
-    #content {
+    .term-page {
         overflow-x: hidden;
         margin-top: 70px;
     }
@@ -635,7 +779,7 @@ td pre {
         overflow-x: auto;
     }
 
-    #content .wrappable:not(.workload-container .test-config) td {
+    .term-page .wrappable:not(.workload-container .test-config) td {
         word-break: normal;
     }
 
@@ -644,22 +788,22 @@ td pre {
         flex-direction: column;
     }
 
-    #content .llr-history-loader,
-    #content .llr-history-widget,
-    #content .llr-history-plot {
+    .term-page .llr-history-loader,
+    .term-page .llr-history-widget,
+    .term-page .llr-history-plot {
         z-index: 0;
     }
 
-    #content #actions {
+    .term-page #actions {
         order: -1;
         margin: 0 0 1rem 0;
     }
 
-    #content #config {
-        float: none;
+    .term-page #config {
+        flex: 1 1 auto;
     }
 
-    #content .long-statblock {
+    .term-page .long-statblock {
         overflow-x: auto;
     }
 }

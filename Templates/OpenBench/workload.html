@@ -119,14 +119,18 @@
             }
 
             function ensureLlrHistoryWidget() {
-                var existing = document.querySelector('.llr-history-widget');
+                var container = document.getElementById('llr-history-container');
+                if (!container) {
+                    return Promise.resolve(null);
+                }
+
+                var existing = container.querySelector('.llr-history-widget');
                 if (existing) {
                     initializeLlrHistoryWidget(existing);
                     return Promise.resolve(existing);
                 }
 
-                var container = document.getElementById('llr-history-container');
-                if (!container || !container.dataset.historyUrl) {
+                if (!container.dataset.historyUrl) {
                     return Promise.resolve(null);
                 }
 
@@ -297,14 +301,14 @@
         <!-- Copy Button: Copy the current results statblock -->
         {% if type == "TEST" or type == "DATAGEN" %}
             <div class="anchor-container">
-                <a class="mt-1 anchorbutton btn-blue" onclick="copy_text('long-statblock', true)">Copy Stat Block</a>
+                <a class="mt-1 anchorbutton btn-blue" onclick="copy_text('long-statblock', true, false, this)">Copy Stat Block</a>
             </div>
         {% endif %}
 
         <!-- Copy Button (DC): Copy the current results statblock -->
         {% if type == "TEST" or type == "DATAGEN" %}
             <div class="anchor-container">
-                <a class="mt-1 anchorbutton btn-blue" onclick="copy_text('long-statblock', true, true)">Copy Stat Block (DC Block)</a>
+                <a class="mt-1 anchorbutton btn-blue" onclick="copy_text('long-statblock', true, true, this)">Copy Stat Block (DC Block)</a>
             </div>
         {% endif %}
 
@@ -319,7 +323,7 @@
         {% if type == "TUNE" %}
             <div class="anchor-container">
                 <pre id="spsa-input" style="display: none">{{workload|spsa_original_input}}</pre>
-                <a class="mt-1 anchorbutton btn-blue" onclick="copy_text('spsa-input', false)">Copy SPSA Inputs</a>
+                <a class="mt-1 anchorbutton btn-blue" onclick="copy_text('spsa-input', false, false, this)">Copy SPSA Inputs</a>
             </div>
         {% endif %}
 
@@ -327,7 +331,7 @@
         {% if type == "TUNE" %}
             <div class="anchor-container">
                 <pre id="spsa-output" style="display: none">{{workload|spsa_optimal_values}}</pre>
-                <a class="mt-1 anchorbutton btn-blue" onclick="copy_text('spsa-output', false)">Copy SPSA Outputs</a>
+                <a class="mt-1 anchorbutton btn-blue" onclick="copy_text('spsa-output', false, false, this)">Copy SPSA Outputs</a>
             </div>
         {% endif %}
 
@@ -340,58 +344,60 @@
             <pre class="long-statblock" id="long-statblock">{{workload|longStatBlock|linebreaksbr}}</pre>
         {% endif %}
 
-        <!-- Forum to modify the Priority, Throughput, or (Tests only) Workload Size -->
-        <form method="POST" action="/{{type|lower}}/{{workload.id}}/MODIFY">
-            {% csrf_token %}
-            <div class="form">
-                <div class="col-full">
+        <!-- Priority / Throughput / (Tests only) Workload Size -->
+        <div class="workload-settings-panel">
+            <div class="workload-settings-label">Workload Settings</div>
 
-                    <div class="row">
+            <form method="POST" action="/{{type|lower}}/{{workload.id}}/MODIFY" class="workload-settings-form">
+                {% csrf_token %}
+
+                <div class="workload-settings-grid">
+                    <div class="workload-settings-field">
                         <label for="priority">Priority</label>
                         <input value="{{workload.priority}}" id="priority" name="priority">
                     </div>
 
-                    <div class="row">
+                    <div class="workload-settings-field">
                         <label for="throughput">Throughput</label>
                         <input value="{{workload.throughput}}" id="throughput" name="throughput">
                     </div>
 
                     {% if type == "TEST" or type == "DATAGEN" %}
-                        <div class="row">
+                        <div class="workload-settings-field">
                             <label for="workload_size">Workload Size</label>
                             <input value="{{workload.workload_size}}" id="workload_size" name="workload_size">
                         </div>
                     {% endif %}
-
-                    <!-- Edit Button: For Approvers or Test Authors -->
-                    {% if profile.approver or profile.user.username == workload.author %}
-                        <input class="anchorbutton btn-blue w-100" type="submit" name="submit" value="Modify">
-                    {% else %}
-                        <input class="anchorbutton btn-disabled w-100" type="submit" name="submit" value="Modify">
-                    {% endif %}
                 </div>
-            </div>
-        </form>
+
+                <!-- Edit Button: For Approvers or Test Authors -->
+                {% if profile.approver or profile.user.username == workload.author %}
+                    <input class="anchorbutton btn-blue w-100" type="submit" name="submit" value="Modify">
+                {% else %}
+                    <input class="anchorbutton btn-disabled w-100" type="submit" name="submit" value="Modify">
+                {% endif %}
+            </form>
+        </div>
 
         {% if workload.test_mode == "SPRT" %}
             <div class="llr-history-panel" title="LLR history over the lifetime of the test">
                 <div class="llr-history-label">LLR History</div>
                 <div id="llr-history-container" class="llr-history-loader" data-history-url="{{llr_history_endpoint}}">
                     <div class="llr-history-chart">
-                        <div class="llr-history-yaxis">
-                            <div></div>
-                            <div></div>
-                            <div></div>
-                        </div>
-                        <div class="llr-history-main">
+                        <div class="llr-history-row">
+                            <div class="llr-history-yaxis">
+                                <div></div>
+                                <div></div>
+                                <div></div>
+                            </div>
                             <div class="llr-history-plot">
                                 <div class="llr-history-placeholder">Loading history graph...</div>
                             </div>
-                            <div class="llr-history-xaxis">
-                                <div>0</div>
-                                <div></div>
-                                <div>{{workload.games}} g</div>
-                            </div>
+                        </div>
+                        <div class="llr-history-xaxis">
+                            <div>0</div>
+                            <div></div>
+                            <div>{{workload.games}} g</div>
                         </div>
                     </div>
                 </div>

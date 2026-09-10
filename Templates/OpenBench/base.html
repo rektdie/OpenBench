@@ -12,6 +12,7 @@
         <link rel="stylesheet" href="{% static 'base.css' %}?{{ static_version }}">
         <link rel="stylesheet" href="{% static 'form.css' %}?{{ static_version }}">
         <link rel="stylesheet" href="{% static 'paging.css' %}?{{ static_version }}">
+        <link rel="stylesheet" href="{% static 'crt.css' %}?{{ static_version }}">
 
         <link href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css' rel='stylesheet'>
 
@@ -24,144 +25,87 @@
         {% endblock %}
 
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-
-                {
-                    var timestamps = document.getElementsByClassName('timestamp');
-
-                    var options = {
-                        year   : 'numeric', month  : '2-digit',
-                        day    : '2-digit', hour   : '2-digit',
-                        minute : '2-digit', second : '2-digit',
-                        hour12 : false,
-                    };
-
-                    for (var i = 0; i < timestamps.length; i++) {
-                        var date = new Date(1000 * timestamps[i].innerHTML);
-                        timestamps[i].innerHTML = date.toLocaleString(undefined, options);
-                    }
-                }
-
-                {
-                    var datestamps = document.getElementsByClassName('datestamp');
-
-                    var options = {
-                        month  : 'short',
-                        day    : '2-digit',
-                    };
-
-                    for (var i = 0; i < datestamps.length; i++) {
-                        var date = new Date(1000 * datestamps[i].innerHTML);
-                        datestamps[i].innerHTML = date.toLocaleString(undefined, options);
-                    }
-                }
-
-            }, false);
-
-            function toggle_sidebar() {
-                document.body.classList.toggle('sidebar-open')
-            }
+            window.CURRENT_USER = {% if user.is_authenticated %}"{{ user.username }}"{% else %}null{% endif %};
+            window.CLICK_SOUND_URL = "{% static 'ui-click.mp3' %}";
         </script>
     </head>
 
     <body>
 
-        <div id="sidebar">
+        <div class="crt-room">
+            <div class="crt-monitor">
+                <div class="crt-shell">
+                    <div class="crt-screw crt-screw-tl"></div>
+                    <div class="crt-screw crt-screw-tr"></div>
+                    <div class="crt-screw crt-screw-bl"></div>
+                    <div class="crt-screw crt-screw-br"></div>
+                    <div class="crt-vents" aria-hidden="true"></div>
+                    <div class="crt-badge" aria-hidden="true">
+                        <span class="crt-badge-mark">&#9670;</span>
+                        <span class="crt-badge-text">REKTBENCH &mdash; MODEL RB-1</span>
+                    </div>
+                    <div class="crt-controls">
+                        <button type="button" id="crt-power-toggle" class="crt-btn crt-btn-power" aria-label="Toggle monitor power" aria-pressed="false" title="Turn monitor off"></button>
+                        <span class="crt-power-led" aria-hidden="true"></span>
+                        <span class="crt-disk-led" id="crt-disk-led" aria-hidden="true" title="Drive activity"></span>
+                    </div>
+                    <div class="crt-screen">
+                        <div class="crt-fx-flash" aria-hidden="true"></div>
+                        <div class="crt-fx-line" aria-hidden="true"></div>
+                        <div class="terminal" id="terminal">
 
-            <ul>
-                <li class="header">Admin</li>
-                {% if user.is_authenticated %}
-                    <li><a href="/logout/"><i class="fa-solid fa-right-from-bracket fa-fw"></i> Logout</a></li>
-                    <li><a href="/profile/"><i class="fa-solid fa-user fa-fw"></i> Profile</a></li>
-                {% else %}
-                    <li><a href="/login"><i class="fa-solid fa-right-to-bracket fa-fw"></i> Login</a></li>
-                    <li><a href="/register"><i class="fa-solid fa-registered fa-fw"></i> Register</a></li>
-                {% endif %}
-            </ul>
+                            <div class="terminal-titlebar">
+                                <span>REKTBENCH // TESTING FRAMEWORK</span>
+                                <span class="terminal-titlebar-right">
+                                    <button type="button" id="sound-toggle" class="sound-toggle" aria-label="Toggle sound effects"><i class="fa-solid fa-volume-high"></i></button>
+                                    <span id="titlebar-username">{% if user.is_authenticated %}{{ user.username }}@rektbench{% else %}guest@rektbench{% endif %}</span>
+                                </span>
+                            </div>
 
-            <hr>
+                            <div class="terminal-output" id="terminal-output"></div>
 
-            <ul>
-                <li class="header">Tests</li>
-                <li><a href="/index"><i class="fa-solid fa-house fa-fw"></i> Index</a></li>
-                <li><a href="/greens"><i class="fa-solid fa-heart fa-fw"></i> Greens</a></li>
-                <li><a href="/search"><i class="fa-solid fa-magnifying-glass fa-fw"></i> Search</a></li>
-            </ul>
+                            <div class="terminal-input-line">
+                                <span class="prompt" id="prompt-user">{% if user.is_authenticated %}{{ user.username }}{% else %}guest{% endif %}@rektbench:~$</span>
+                                <input id="terminal-input" autocomplete="off" spellcheck="false" autocapitalize="off" autofocus>
+                            </div>
 
-            <hr>
-
-            <ul>
-                <li class="header">Actions</li>
-                <li><a href="/newTest"><i class="fa-solid fa-plus fa-fw"></i> Create Test</a></li>
-                <li><a href="/newTune"><i class="fa-solid fa-vial fa-fw"></i> Create Tune</a></li>
-                <li><a href="/newDatagen"><i class="fa-solid fa-database fa-fw"></i> Create Datagen</a></li>
-                <li><a href="/newNetwork"><i class="fa-solid fa-upload fa-fw"></i> Upload Net</a></li>
-            </ul>
-
-            <hr>
-
-            <ul>
-                <li class="header">Info</li>
-                <li><a href="/users"><i class="fa-solid fa-users fa-fw"></i> Users</a></li>
-                <li><a href="/events"><i class="fa-solid fa-circle-exclamation fa-fw"></i> Events</a></li>
-                <li><a href="/errors"><i class="fa-solid fa-exclamation-triangle fa-fw"></i> Errors</a></li>
-                <li><a href="/machines"><i class="fa-solid fa-microchip fa-fw"></i> Machines</a></li>
-                <li><a href="/networks"><i class="fa-solid fa-circle-nodes fa-fw"></i> Networks</a></li>
-            </ul>
-
-            <hr>
-
-            <ul>
-                <li class="header">Support</li>
-                <li><a href="{{config.client_repo_url}}"><i class="fa-brands fa-github fa-fw"></i> OpenBench</a></li>
-                <li><a href="https://discord.gg/9MVg7fBTpM"><i class="fa-brands fa-discord fa-fw"></i> Discord</a></li>
-            </ul>
-
-            <hr>
-
-            <ul>
-                <li class="header">Engines</li>
-                {% for engine, data in config.engines.items %}
-                    <li><a href="{{data.source}}">{{engine}}</a></li>
-                {% endfor %}
-            </ul>
-
-            <hr>
-
-        </div>
-
-        <div id="content-parent">
-            <div id="content" class="pb-5">
-                <div id="content-header">
-                    <button id="sidebar-toggle" onclick="toggle_sidebar()">
-                        <i class="fa-solid fa-bars fa-fw"></i>
-                    </button>
-                    <h2>
-                        <a class="site-title" href="/">RektBench&nbsp;Testing&nbsp;Framework</a>
-                    </h2>
+                        </div>
+                    </div>
                 </div>
-
-                {% if request.session.error_message %}
-                    <div class="error-message">
-                        <pre>{{request.session.error_message}}</pre>
-                    </div>
-                {% endif %}
-
-                {% if request.session.warning_message %}
-                    <div class="warning-message">
-                        <pre>{{request.session.warning_message}}</pre>
-                    </div>
-                {% endif %}
-
-                {% if request.session.status_message %}
-                    <div class="status-message">
-                        <pre>{{request.session.status_message}}</pre>
-                    </div>
-                {% endif %}
-
-                {% block content %}
-                {% endblock %}
             </div>
         </div>
+
+        <!-- Rendered by Django on first load; terminal.js lifts this into the
+             scrollback as the first command block, then removes it. Every
+             later navigation fetches a fresh copy of this same wrapper from
+             the server and appends it below, so the whole site keeps working
+             through commands / clicked links instead of full page loads. -->
+        <div id="page-block" hidden>
+
+            {% if request.session.error_message %}
+                <div class="error-message">
+                    <pre>{{request.session.error_message}}</pre>
+                </div>
+            {% endif %}
+
+            {% if request.session.warning_message %}
+                <div class="warning-message">
+                    <pre>{{request.session.warning_message}}</pre>
+                </div>
+            {% endif %}
+
+            {% if request.session.status_message %}
+                <div class="status-message">
+                    <pre>{{request.session.status_message}}</pre>
+                </div>
+            {% endif %}
+
+            {% block content %}
+            {% endblock %}
+
+        </div>
+
+        <script src="{% static 'terminal.js' %}?{{ static_version }}"></script>
+
     </body>
 </html>

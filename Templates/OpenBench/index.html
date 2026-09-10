@@ -17,7 +17,6 @@
                         {% include "OpenBench/Blocks/testsummary.html" %}
                     </tr>
                 {% endfor %}
-                <tr class="table-spacer"><th colspan='6'></th></tr>
             {% endif %}
 
             <!-- Currently Awaiting tests (Waiting for Artifacts) -->
@@ -28,7 +27,6 @@
                         {% include "OpenBench/Blocks/testsummary.html" %}
                     </tr>
                 {% endfor %}
-                <tr class="table-spacer"><th colspan='6'></th></tr>
             {% endif %}
 
             <!-- Currently Running tests (Waiting to be completed) -->
@@ -48,7 +46,6 @@
                         {% include "OpenBench/Blocks/testsummary.html" %}
                     </tr>
                 {% endfor %}
-                <tr class="table-spacer"><th colspan='6'></th></tr>
             {% endif %}
 
         {% endif %}

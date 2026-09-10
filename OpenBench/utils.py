@@ -346,7 +346,7 @@ def getMachineStatus(username=None):
 def getPaging(content, page, url, pagelen=25):
 
     start = max(0, pagelen * (page - 1))
-    total = content.count()
+    total = len(content) if isinstance(content, (list, tuple)) else content.count()
     end   = min(total, pagelen * page)
     count = 1 + math.ceil(total / pagelen)
 

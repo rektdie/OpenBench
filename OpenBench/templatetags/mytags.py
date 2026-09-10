@@ -356,12 +356,12 @@ def llr_history_graph(test, width=320, height=112):
     svg = '''
         <div class="llr-history-widget" data-history="{history_json}">
             <div class="llr-history-chart">
-                <div class="llr-history-yaxis">
-                    <div>{y_max_label}</div>
-                    <div>{y_mid_label}</div>
-                    <div>{y_min_label}</div>
-                </div>
-                <div class="llr-history-main">
+                <div class="llr-history-row">
+                    <div class="llr-history-yaxis">
+                        <div>{y_max_label}</div>
+                        <div>{y_mid_label}</div>
+                        <div>{y_min_label}</div>
+                    </div>
                     <div class="llr-history-plot">
                         <svg class="llr-history-graph" viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="{title}">
                             <title>{title}</title>
@@ -376,11 +376,11 @@ def llr_history_graph(test, width=320, height=112):
                         </svg>
                         <div class="llr-history-tooltip"></div>
                     </div>
-                    <div class="llr-history-xaxis">
-                        <div>0</div>
-                        <div>{x_mid_label}</div>
-                        <div>{x_max_label}</div>
-                    </div>
+                </div>
+                <div class="llr-history-xaxis">
+                    <div>0</div>
+                    <div>{x_mid_label}</div>
+                    <div>{x_max_label}</div>
                 </div>
             </div>
         </div>

@@ -1,4 +1,4 @@
-#content .form .col-half {
+.term-page .form .col-half {
     display: inline-block;
     width: 25%;
     white-space: normal;
@@ -6,7 +6,7 @@
     vertical-align: top;
 }
 
-#content .form .col {
+.term-page .form .col {
     display: inline-block;
     width: 50%;
     white-space: normal;
@@ -15,7 +15,7 @@
     vertical-align: top;
 }
 
-#content .form .col-full {
+.term-page .form .col-full {
     display: block;
     width: 100%;
     white-space: normal;
@@ -27,26 +27,26 @@
 /* Styles for screen widths less than 600px */
 
 @media (max-width: 1024px) {
-    #content .form .col {
+    .term-page .form .col {
         display: block;
         width: 100%;
     }
 }
 
-#content .form h3 {
+.term-page .form h3 {
     font-size: 14px;
     color: var(--color-font3);
     text-align: left;
     padding-left: 1.5rem;
 }
 
-#content .form .row {
+.term-page .form .row {
     display: flex;
     align-items: center;
     margin-bottom: 0.25rem;
 }
 
-#content .row label {
+.term-page .row label {
     font-size: 13px;
     width: 25%;
     min-width: 128px;
@@ -56,7 +56,7 @@
 }
 
 
-#content .row input, #content .row select, #content .row textarea {
+.term-page .row input, .term-page .row select, .term-page .row textarea {
     flex-grow: 1;
     min-width: 0;
     border: 1px solid var(--color3);
@@ -67,11 +67,11 @@
     font-family: "Courier Prime", serif;
 }
 
-#content .row input[type="file"]{
+.term-page .row input[type="file"]{
      padding: 2px 2px;
 }
 
-#content .row input:focus, #content .row select:focus, #content .row textarea:focus {
+.term-page .row input:focus, .term-page .row select:focus, .term-page .row textarea:focus {
     outline: none;
     border-color: var(--color3);
     box-shadow: 0 0 0 2px rgba(77, 144, 254, 0.75);
@@ -79,11 +79,11 @@
     color: var(--color-font2);
 }
 
-#content .row select > option{
+.term-page .row select > option{
     font-family: "Helvetica", serif;
 }
 
-#content .row input[type="file"]::file-selector-button {
+.term-page .row input[type="file"]::file-selector-button {
     background-color: var(--color3);
     border: 1px solid var(--color2);
     border-radius: 4px;
@@ -94,31 +94,31 @@
     font-family: "Courier Prime", serif;
 }
 
-#content .row input[type="file"]::file-selector-button:hover {
+.term-page .row input[type="file"]::file-selector-button:hover {
     background-color: rgba(77, 144, 254, 0.8);
     border-color: var(--color2);
 }
 
-#content .row input[readonly] {
+.term-page .row input[readonly] {
     color: var(--color-font1);
 }
 
-#content .form .flex {
+.term-page .form .flex {
     display: flex;
     flex-wrap: wrap;
     max-width: 100%;
     justify-content: flex-start;
 }
 
-#content .form .flex button{
+.term-page .form .flex button{
     max-width: 100%;
 }
 
-#content #engines-container span {
+.term-page #engines-container span {
     margin: 0px 4px 0px 4px;
     cursor: pointer;
 }
 
-#content #engines-container span input {
+.term-page #engines-container span input {
     cursor: pointer;
 }
